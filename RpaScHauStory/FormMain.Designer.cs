@@ -56,12 +56,12 @@ namespace RpaScHauStory
             //
             // pnlTabs
             //
-            pnlTabs.FlowDirection = FlowDirection.TopDown;
+            pnlTabs.FlowDirection = FlowDirection.LeftToRight;
             pnlTabs.Location = new Point(20, 78);
             pnlTabs.Name = "pnlTabs";
             pnlTabs.Size = new Size(240, 0);
             pnlTabs.TabIndex = 2;
-            pnlTabs.WrapContents = false;
+            pnlTabs.WrapContents = true;
             //
             // lblStatus
             //

@@ -77,6 +77,104 @@ namespace RpaScHauStory
             return page;
         }
 
+        /// <summary>
+        /// 페이지에서 로그인 폼을 자동으로 탐지해 ID/비밀번호를 입력하고 제출합니다.
+        /// 로그인 폼이 없거나 이미 로그인된 경우 조용히 종료합니다.
+        /// </summary>
+        /// <param name="idSelector">CSS 셀렉터 — null/empty면 자동 탐지</param>
+        /// <param name="pwdSelector">CSS 셀렉터 — null/empty면 자동 탐지</param>
+        /// <param name="submitSelector">CSS 셀렉터 — null/empty면 자동 탐지</param>
+        public async Task AutoLoginAsync(IPage page, string loginId, string loginPwd,
+            string? idSelector = null, string? pwdSelector = null, string? submitSelector = null)
+        {
+            // ── 비밀번호 필드 ─────────────────────────────────────
+            var pwdLocator = string.IsNullOrEmpty(pwdSelector)
+                ? page.Locator("input[type='password']").First
+                : page.Locator(pwdSelector).First;
+
+            try
+            {
+                await pwdLocator.WaitForAsync(new LocatorWaitForOptions
+                {
+                    State = WaitForSelectorState.Visible,
+                    Timeout = 5000,
+                });
+            }
+            catch (TimeoutException)
+            {
+                return; // 로그인 폼 없음 또는 이미 로그인된 상태
+            }
+
+            // ── ID 필드 ───────────────────────────────────────────
+            if (!string.IsNullOrEmpty(idSelector))
+            {
+                var field = page.Locator(idSelector).First;
+                if (await field.CountAsync() > 0)
+                    await field.FillAsync(loginId);
+            }
+            else
+            {
+                string[] fallbackIdSelectors =
+                [
+                    "input[name='id']",
+                    "input[name='userId']",
+                    "input[name='loginId']",
+                    "input[name='username']",
+                    "input[name='user_id']",
+                    "input[name='account']",
+                    "input[name='email']",
+                    "input[type='email']",
+                    "input[type='text']",
+                ];
+                foreach (var sel in fallbackIdSelectors)
+                {
+                    var field = page.Locator(sel).First;
+                    if (await field.CountAsync() > 0 && await field.IsVisibleAsync())
+                    {
+                        await field.FillAsync(loginId);
+                        break;
+                    }
+                }
+            }
+
+            await pwdLocator.FillAsync(loginPwd);
+
+            // ── 제출 버튼 ─────────────────────────────────────────
+            if (!string.IsNullOrEmpty(submitSelector))
+            {
+                var btn = page.Locator(submitSelector).First;
+                if (await btn.CountAsync() > 0)
+                {
+                    await btn.ClickAsync();
+                    return;
+                }
+            }
+            else
+            {
+                string[] fallbackSubmitSelectors =
+                [
+                    "button[type='submit']",
+                    "input[type='submit']",
+                    "button:has-text('로그인')",
+                    "button:has-text('login')",
+                    "button:has-text('Login')",
+                    "a:has-text('로그인')",
+                ];
+                foreach (var sel in fallbackSubmitSelectors)
+                {
+                    var btn = page.Locator(sel).First;
+                    if (await btn.CountAsync() > 0 && await btn.IsVisibleAsync())
+                    {
+                        await btn.ClickAsync();
+                        return;
+                    }
+                }
+            }
+
+            // 제출 버튼을 찾지 못하면 Enter
+            await pwdLocator.PressAsync("Enter");
+        }
+
         /// <summary>이름으로 탭을 닫습니다.</summary>
         public async Task CloseTabAsync(string tabName)
         {

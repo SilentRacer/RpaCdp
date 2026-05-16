@@ -23,16 +23,23 @@ namespace RpaScHauStory
         private void FormSettings_Load(object? sender, EventArgs e)
         {
             txtCdpEndpoint.Text = _config.CdpEndpoint;
+            chkAutoConnect.Checked = _config.AutoConnect;
+            nudColumns.Value = Math.Max(nudColumns.Minimum, Math.Min(nudColumns.Maximum, _config.Columns));
 
             foreach (var tab in _config.Tabs)
-                dgvTabs.Rows.Add(tab.Name, tab.Url);
+                dgvTabs.Rows.Add(
+                    tab.Name, tab.AutoRun, tab.Url,
+                    tab.AutoLogin,
+                    CredentialHelper.Decrypt(tab.LoginId),
+                    CredentialHelper.Decrypt(tab.LoginPwd),
+                    tab.IdSelector, tab.PwdSelector, tab.SubmitSelector);
         }
 
         // ── 버튼 핸들러 ───────────────────────────────────────────
 
         private void btnAdd_Click(object? sender, EventArgs e)
         {
-            int idx = dgvTabs.Rows.Add("새 버튼", "https://");
+            int idx = dgvTabs.Rows.Add("새 버튼", false, "https://", false, "", "", "", "", "");
             dgvTabs.ClearSelection();
             dgvTabs.Rows[idx].Selected = true;
             dgvTabs.CurrentCell = dgvTabs.Rows[idx].Cells[0];
@@ -102,7 +109,13 @@ namespace RpaScHauStory
                 return;
             }
 
-            var updated = new AppConfig { CdpEndpoint = endpoint, Tabs = tabs };
+            var updated = new AppConfig
+            {
+                CdpEndpoint = endpoint,
+                AutoConnect = chkAutoConnect.Checked,
+                Columns = (int)nudColumns.Value,
+                Tabs = tabs,
+            };
             AppConfig.Save(updated);
 
             MessageBox.Show("저장되었습니다.", "알림",
@@ -119,10 +132,26 @@ namespace RpaScHauStory
             var list = new List<TabConfig>();
             foreach (DataGridViewRow row in dgvTabs.Rows)
             {
-                var name = row.Cells[0].Value?.ToString()?.Trim() ?? "";
-                var url  = row.Cells[1].Value?.ToString()?.Trim() ?? "";
+                var name           = row.Cells[0].Value?.ToString()?.Trim() ?? "";
+                var autoRun        = row.Cells[1].Value is true;
+                var url            = row.Cells[2].Value?.ToString()?.Trim() ?? "";
+                var autoLogin      = row.Cells[3].Value is true;
+                var loginId        = row.Cells[4].Value?.ToString()?.Trim() ?? "";
+                var loginPwd       = row.Cells[5].Value?.ToString()?.Trim() ?? "";
+                var idSelector     = row.Cells[6].Value?.ToString()?.Trim() ?? "";
+                var pwdSelector    = row.Cells[7].Value?.ToString()?.Trim() ?? "";
+                var submitSelector = row.Cells[8].Value?.ToString()?.Trim() ?? "";
                 if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(url))
-                    list.Add(new TabConfig { Name = name, Url = url });
+                    list.Add(new TabConfig
+                    {
+                        Name = name, AutoRun = autoRun, Url = url,
+                        AutoLogin = autoLogin,
+                        LoginId        = CredentialHelper.Encrypt(loginId),
+                        LoginPwd       = CredentialHelper.Encrypt(loginPwd),
+                        IdSelector     = idSelector,
+                        PwdSelector    = pwdSelector,
+                        SubmitSelector = submitSelector,
+                    });
             }
             return list;
         }

@@ -23,7 +23,11 @@ namespace RpaScHauStory
             _config = AppConfig.Load();
             BuildTabButtons();
             SetTabButtonsEnabled(false);
-            await ConnectBrowserAsync();
+
+            if (_config.AutoConnect)
+                await ConnectBrowserAsync(runAutoRun: true);
+            else
+                lblStatus.Text = "수동 연결 모드 — '브라우저 연결' 버튼을 누르세요.";
         }
 
         private async void FormMain_FormClosing(object? sender, FormClosingEventArgs e)
@@ -38,27 +42,37 @@ namespace RpaScHauStory
         {
             pnlTabs.Controls.Clear();
 
+            const int btnWidth  = 200;
             const int btnHeight = 46;
-            const int btnGap = 8;
+            const int btnGap    = 6;
+
+            int cols = Math.Max(1, _config.Columns);
 
             foreach (var tab in _config.Tabs)
             {
                 var btn = new Button
                 {
                     Text = tab.Name,
-                    Size = new Size(199, btnHeight),
+                    Size = new Size(btnWidth, btnHeight),
                     UseVisualStyleBackColor = true,
                     Tag = tab,
-                    Margin = new Padding(0, 0, 0, btnGap),
+                    Margin = new Padding(0, 0, btnGap, btnGap),
                 };
                 btn.Click += TabButton_Click;
                 pnlTabs.Controls.Add(btn);
             }
 
-            // AutoSize 계산 전에 높이를 직접 설정
-            pnlTabs.Size = new Size(199, _config.Tabs.Count * (btnHeight + btnGap));
+            // FlowLayoutPanel 너비를 열 수에 맞춰 설정하면 자동으로 줄바꿈됨
+            int panelWidth  = cols * (btnWidth + btnGap);
+            int rows        = (int)Math.Ceiling(_config.Tabs.Count / (double)cols);
+            int panelHeight = Math.Max(1, rows) * (btnHeight + btnGap);
+
+            pnlTabs.Size = new Size(panelWidth, panelHeight);
+
+            // 폼 너비를 패널에 맞게 조정 (좌우 여백 각 20px)
+            int formWidth = Math.Max(280, pnlTabs.Left + panelWidth + 20);
             lblStatus.Top = pnlTabs.Bottom + 12;
-            ClientSize = new Size(ClientSize.Width, lblStatus.Bottom + 20);
+            ClientSize = new Size(formWidth, lblStatus.Bottom + 20);
         }
 
         private async void TabButton_Click(object? sender, EventArgs e)
@@ -67,13 +81,21 @@ namespace RpaScHauStory
 
             await RunTabActionAsync(tab.Name, async () =>
             {
-                await _tabManager!.NavigateAsync(tab.Name, tab.Url);
+                var page = await _tabManager!.NavigateAsync(tab.Name, tab.Url);
+                if (tab.AutoLogin && !string.IsNullOrEmpty(tab.LoginId))
+                {
+                    lblStatus.Text = $"[{tab.Name}] 자동 로그온 중...";
+                    await _tabManager.AutoLoginAsync(page,
+                        CredentialHelper.Decrypt(tab.LoginId),
+                        CredentialHelper.Decrypt(tab.LoginPwd),
+                        tab.IdSelector, tab.PwdSelector, tab.SubmitSelector);
+                }
             });
         }
 
         // ── CDP 연결 ──────────────────────────────────────────────
 
-        private async Task ConnectBrowserAsync()
+        private async Task ConnectBrowserAsync(bool runAutoRun = false)
         {
             try
             {
@@ -94,6 +116,9 @@ namespace RpaScHauStory
 
                 lblStatus.Text = "연결됨";
                 SetTabButtonsEnabled(true);
+
+                if (runAutoRun)
+                    await RunAutoTabsAsync();
             }
             catch (Exception ex)
             {
@@ -101,6 +126,34 @@ namespace RpaScHauStory
                 lblStatus.Text = $"연결 실패: {ex.Message}";
                 SetTabButtonsEnabled(false);
             }
+        }
+
+        private async Task RunAutoTabsAsync()
+        {
+            var autoTabs = _config.Tabs.Where(t => t.AutoRun).ToList();
+            if (autoTabs.Count == 0) return;
+
+            foreach (var tab in autoTabs)
+            {
+                try
+                {
+                    lblStatus.Text = $"[자동 실행] {tab.Name}...";
+                    var page = await _tabManager!.NavigateAsync(tab.Name, tab.Url);
+                    if (tab.AutoLogin && !string.IsNullOrEmpty(tab.LoginId))
+                    {
+                        lblStatus.Text = $"[자동 로그온] {tab.Name}...";
+                        await _tabManager.AutoLoginAsync(page,
+                            CredentialHelper.Decrypt(tab.LoginId),
+                            CredentialHelper.Decrypt(tab.LoginPwd),
+                            tab.IdSelector, tab.PwdSelector, tab.SubmitSelector);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[AutoRun:{tab.Name}] {ex.Message}");
+                }
+            }
+            lblStatus.Text = "연결됨";
         }
 
         // ── Chrome 실행 헬퍼 ──────────────────────────────────────
