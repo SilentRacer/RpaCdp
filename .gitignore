@@ -1,0 +1,106 @@
+# =========================
+# Visual Studio
+# =========================
+
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio cache
+*.cache
+*.log
+
+# NuGet
+packages/
+!packages/build/
+*.nupkg
+*.snupkg
+
+# Test results
+TestResults/
+*.trx
+
+# =========================
+# Rider / VSCode
+# =========================
+
+.idea/
+.vscode/
+
+# =========================
+# Playwright
+# =========================
+
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Downloaded browser binaries
+/playwright-browsers/
+/ms-playwright/
+
+# Screenshots / Videos / Traces
+*.png
+*.webm
+*.zip
+
+# If you save automation downloads
+Downloads/
+download/
+downloads/
+
+# =========================
+# Node.js (if mixed project)
+# =========================
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Publish / Installer
+# =========================
+
+publish/
+Publish/
+
+# Inno Setup outputs
+Output/
+InstallerOutput/
+
+# Setup executable files
+*.exe
+
+# Keep setup scripts
+!*.iss
+
+# =========================
+# OS files
+# =========================
+
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# =========================
+# Environment / Secrets
+# =========================
+
+.env
+.env.*
+secrets.json
+appsettings.Development.json
