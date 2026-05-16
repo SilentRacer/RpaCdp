@@ -3,25 +3,56 @@ namespace RpaScHauStory
     public partial class FormSettings : Form
     {
         private readonly AppConfig _config;
+        private FormSettingsLayout _layout = new();
+
+        // ── 개발자 기본 레이아웃 ──────────────────────────────────
+        private const int DefaultFormWidth  = 900;
+        private const int DefaultFormHeight = 768;
+
+        private static readonly (string Name, int Width)[] DefaultColumnWidths =
+        [
+            ("colName",            130),
+            ("colAutoRun",          80),
+            ("colUrl",             300),
+            ("colAutoLogin",        90),
+            ("colLoginId",         150),
+            ("colLoginPwd",        150),
+            ("colIdSelector",      200),
+            ("colPwdSelector",     200),
+            ("colSubmitSelector",  200),
+            ("colExtraSelector",   200),
+            ("colExtraSelectorType", 100),
+            ("colExtraValue",      150),
+        ];
 
         public FormSettings(AppConfig config)
         {
             InitializeComponent();
             _config = config;
 
-            Load += FormSettings_Load;
-            btnAdd.Click += btnAdd_Click;
-            btnDelete.Click += btnDelete_Click;
-            btnMoveUp.Click += btnMoveUp_Click;
+            Load    += FormSettings_Load;
+            FormClosed += FormSettings_FormClosed;
+            btnAdd.Click      += btnAdd_Click;
+            btnDelete.Click   += btnDelete_Click;
+            btnMoveUp.Click   += btnMoveUp_Click;
             btnMoveDown.Click += btnMoveDown_Click;
-            btnSave.Click += btnSave_Click;
-            btnCancel.Click += (_, _) => { DialogResult = DialogResult.Cancel; Close(); };
+            btnSave.Click     += btnSave_Click;
+            btnCancel.Click   += (_, _) => { DialogResult = DialogResult.Cancel; Close(); };
+            chkUserLayout.CheckedChanged += chkUserLayout_CheckedChanged;
         }
 
         // ── 초기화 ────────────────────────────────────────────────
 
         private void FormSettings_Load(object? sender, EventArgs e)
         {
+            _layout = FormSettingsLayout.Load();
+            chkUserLayout.Checked = _layout.UseUserLayout;
+
+            if (_layout.UseUserLayout && _layout.ColumnWidths.Count > 0)
+                ApplyUserLayout();
+            else
+                ApplyDefaultLayout();
+
             txtCdpEndpoint.Text = _config.CdpEndpoint;
             chkAutoConnect.Checked = _config.AutoConnect;
             nudColumns.Value = Math.Max(nudColumns.Minimum, Math.Min(nudColumns.Maximum, _config.Columns));
@@ -36,6 +67,56 @@ namespace RpaScHauStory
                     tab.ExtraInput.Selector,
                     string.IsNullOrEmpty(tab.ExtraInput.SelectorType) ? "text" : tab.ExtraInput.SelectorType,
                     tab.ExtraInput.Value);
+        }
+
+        private void FormSettings_FormClosed(object? sender, FormClosedEventArgs e)
+        {
+            _layout.UseUserLayout = chkUserLayout.Checked;
+            if (_layout.UseUserLayout)
+            {
+                _layout.FormWidth  = ClientSize.Width;
+                _layout.FormHeight = ClientSize.Height;
+                _layout.ColumnWidths.Clear();
+                foreach (DataGridViewColumn col in dgvTabs.Columns)
+                    _layout.ColumnWidths[col.Name] = col.Width;
+            }
+            FormSettingsLayout.Save(_layout);
+        }
+
+        // ── 레이아웃 적용 ─────────────────────────────────────────
+
+        private void ApplyDefaultLayout()
+        {
+            ClientSize = new Size(DefaultFormWidth, DefaultFormHeight);
+            foreach (var (name, width) in DefaultColumnWidths)
+            {
+                if (dgvTabs.Columns[name] is { } col)
+                {
+                    col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                    col.Width = width;
+                }
+            }
+        }
+
+        private void ApplyUserLayout()
+        {
+            if (_layout.FormWidth > 0 && _layout.FormHeight > 0)
+                ClientSize = new Size(_layout.FormWidth, _layout.FormHeight);
+
+            foreach (var (name, width) in _layout.ColumnWidths)
+            {
+                if (dgvTabs.Columns[name] is { } col)
+                {
+                    col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                    col.Width = width;
+                }
+            }
+        }
+
+        private void chkUserLayout_CheckedChanged(object? sender, EventArgs e)
+        {
+            if (!chkUserLayout.Checked)
+                ApplyDefaultLayout();
         }
 
         // ── 버튼 핸들러 ───────────────────────────────────────────
@@ -135,12 +216,12 @@ namespace RpaScHauStory
             var list = new List<TabConfig>();
             foreach (DataGridViewRow row in dgvTabs.Rows)
             {
-                var name           = row.Cells[0].Value?.ToString()?.Trim() ?? "";
-                var autoRun        = row.Cells[1].Value is true;
-                var url            = row.Cells[2].Value?.ToString()?.Trim() ?? "";
-                var autoLogin      = row.Cells[3].Value is true;
-                var loginId        = row.Cells[4].Value?.ToString()?.Trim() ?? "";
-                var loginPwd       = row.Cells[5].Value?.ToString()?.Trim() ?? "";
+                var name             = row.Cells[0].Value?.ToString()?.Trim() ?? "";
+                var autoRun          = row.Cells[1].Value is true;
+                var url              = row.Cells[2].Value?.ToString()?.Trim() ?? "";
+                var autoLogin        = row.Cells[3].Value is true;
+                var loginId          = row.Cells[4].Value?.ToString()?.Trim() ?? "";
+                var loginPwd         = row.Cells[5].Value?.ToString()?.Trim() ?? "";
                 var idSelector       = row.Cells[6].Value?.ToString()?.Trim() ?? "";
                 var pwdSelector      = row.Cells[7].Value?.ToString()?.Trim() ?? "";
                 var submitSelector   = row.Cells[8].Value?.ToString()?.Trim() ?? "";

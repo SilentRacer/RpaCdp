@@ -109,7 +109,8 @@ namespace RpaScHauStory
             // ── 추가 입력 필드 (ID 입력 전 처리 — 예: 단지 선택 드롭다운) ──
             if (extraInput is not null && !string.IsNullOrEmpty(extraInput.Selector))
             {
-                var extraField = page.Locator(extraInput.Selector).First;
+                //var extraField = page.Locator(extraInput.Selector).First;
+                var extraField = page.Locator($"select[name='{extraInput.Selector}']").First;
                 if (await extraField.CountAsync() > 0 && await extraField.IsVisibleAsync())
                 {
                     if (string.Equals(extraInput.SelectorType, "select", StringComparison.OrdinalIgnoreCase))
@@ -140,6 +141,7 @@ namespace RpaScHauStory
                     "input[type='email']",
                     "input[type='text']",
                 ];
+                // 앞에나오는 것이 ID이고 두번째 나오는 것이 PWD이므로 아래처럼 적용
                 foreach (var sel in fallbackIdSelectors)
                 {
                     var field = page.Locator(sel).First;

@@ -15,6 +15,8 @@ namespace RpaScHauStory
 
         private void InitializeComponent()
         {
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             lblCdp = new Label();
             txtCdpEndpoint = new TextBox();
             chkAutoConnect = new CheckBox();
@@ -41,6 +43,7 @@ namespace RpaScHauStory
             btnMoveDown = new Button();
             btnSave = new Button();
             btnCancel = new Button();
+            chkUserLayout = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)nudColumns).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dgvTabs).BeginInit();
             SuspendLayout();
@@ -59,7 +62,7 @@ namespace RpaScHauStory
             txtCdpEndpoint.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtCdpEndpoint.Location = new Point(231, 18);
             txtCdpEndpoint.Name = "txtCdpEndpoint";
-            txtCdpEndpoint.Size = new Size(708, 39);
+            txtCdpEndpoint.Size = new Size(3084, 39);
             txtCdpEndpoint.TabIndex = 11;
             // 
             // chkAutoConnect
@@ -115,6 +118,14 @@ namespace RpaScHauStory
             dgvTabs.AllowUserToDeleteRows = false;
             dgvTabs.AllowUserToResizeRows = false;
             dgvTabs.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = SystemColors.Control;
+            dataGridViewCellStyle1.Font = new Font("맑은 고딕", 9F);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            dgvTabs.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dgvTabs.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvTabs.Columns.AddRange(new DataGridViewColumn[] { colName, colAutoRun, colUrl, colAutoLogin, colLoginId, colLoginPwd, colIdSelector, colPwdSelector, colSubmitSelector, colExtraSelector, colExtraSelectorType, colExtraValue });
             dgvTabs.Location = new Point(20, 199);
@@ -123,15 +134,16 @@ namespace RpaScHauStory
             dgvTabs.RowHeadersVisible = false;
             dgvTabs.RowHeadersWidth = 82;
             dgvTabs.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvTabs.Size = new Size(1786, 513);
+            dgvTabs.Size = new Size(1955, 513);
             dgvTabs.TabIndex = 0;
             // 
             // colName
             // 
+            colName.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
             colName.HeaderText = "버튼 이름";
             colName.MinimumWidth = 10;
             colName.Name = "colName";
-            colName.Width = 130;
+            colName.Width = 10;
             // 
             // colAutoRun
             // 
@@ -140,86 +152,95 @@ namespace RpaScHauStory
             colAutoRun.Name = "colAutoRun";
             colAutoRun.ToolTipText = "자동 연결 후 이 탭을 자동으로 열지 여부";
             colAutoRun.Width = 80;
-            //
+            // 
             // colUrl
-            //
-            colUrl.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            // 
             colUrl.HeaderText = "URL";
-            colUrl.MinimumWidth = 10;
+            colUrl.MinimumWidth = 120;
             colUrl.Name = "colUrl";
-            //
+            colUrl.Width = 300;
+            // 
             // colAutoLogin
-            //
+            // 
             colAutoLogin.HeaderText = "자동 로그온";
             colAutoLogin.MinimumWidth = 10;
             colAutoLogin.Name = "colAutoLogin";
-            colAutoLogin.Width = 90;
             colAutoLogin.ToolTipText = "탭 열기 후 자동으로 로그온할지 여부";
-            //
+            colAutoLogin.Width = 90;
+            // 
             // colLoginId
-            //
+            // 
+            colLoginId.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
             colLoginId.HeaderText = "아이디";
             colLoginId.MinimumWidth = 10;
             colLoginId.Name = "colLoginId";
-            colLoginId.Width = 150;
-            //
+            colLoginId.Width = 10;
+            // 
             // colLoginPwd
-            //
+            // 
+            colLoginPwd.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
             colLoginPwd.HeaderText = "비밀번호";
             colLoginPwd.MinimumWidth = 10;
             colLoginPwd.Name = "colLoginPwd";
-            colLoginPwd.Width = 150;
-            //
+            colLoginPwd.Width = 10;
+            // 
             // colIdSelector
-            //
+            // 
+            colIdSelector.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
             colIdSelector.HeaderText = "ID 셀렉터";
             colIdSelector.MinimumWidth = 10;
             colIdSelector.Name = "colIdSelector";
-            colIdSelector.Width = 200;
             colIdSelector.ToolTipText = "아이디 입력 필드 CSS 셀렉터 (비워 두면 자동 탐지)";
-            //
+            colIdSelector.Width = 10;
+            // 
             // colPwdSelector
-            //
+            // 
+            colPwdSelector.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
             colPwdSelector.HeaderText = "PWD 셀렉터";
             colPwdSelector.MinimumWidth = 10;
             colPwdSelector.Name = "colPwdSelector";
-            colPwdSelector.Width = 200;
             colPwdSelector.ToolTipText = "비밀번호 입력 필드 CSS 셀렉터 (비워 두면 자동 탐지)";
-            //
+            colPwdSelector.Width = 10;
+            // 
             // colSubmitSelector
-            //
-            colSubmitSelector.HeaderText = "제출 셀렉터";
+            // 
+            colSubmitSelector.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            colSubmitSelector.HeaderText = "로그인 셀렉터";
             colSubmitSelector.MinimumWidth = 10;
             colSubmitSelector.Name = "colSubmitSelector";
-            colSubmitSelector.Width = 200;
             colSubmitSelector.ToolTipText = "로그온 버튼 CSS 셀렉터 (비워 두면 자동 탐지)";
-            //
+            colSubmitSelector.Width = 211;
+            // 
             // colExtraSelector
-            //
+            // 
+            colExtraSelector.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
             colExtraSelector.HeaderText = "추가 셀렉터";
             colExtraSelector.MinimumWidth = 10;
             colExtraSelector.Name = "colExtraSelector";
-            colExtraSelector.Width = 200;
             colExtraSelector.ToolTipText = "로그온 전 추가 입력 필드 CSS 셀렉터";
-            //
+            colExtraSelector.Width = 187;
+            // 
             // colExtraSelectorType
-            //
+            // 
+            colExtraSelectorType.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            dataGridViewCellStyle2.NullValue = "text";
+            colExtraSelectorType.DefaultCellStyle = dataGridViewCellStyle2;
             colExtraSelectorType.HeaderText = "셀렉터 종류";
+            colExtraSelectorType.Items.AddRange(new object[] { "text", "select" });
             colExtraSelectorType.MinimumWidth = 10;
             colExtraSelectorType.Name = "colExtraSelectorType";
-            colExtraSelectorType.Width = 100;
             colExtraSelectorType.ToolTipText = "text: 텍스트 입력 / select: 드롭다운 표시명 선택";
-            colExtraSelectorType.Items.AddRange(new object[] { "text", "select" });
-            colExtraSelectorType.DefaultCellStyle.NullValue = "text";
-            //
+            colExtraSelectorType.Width = 148;
+            // 
             // colExtraValue
-            //
+            // 
+            colExtraValue.AutoSizeMode = DataGridViewAutoSizeColumnMode.DisplayedCellsExceptHeader;
             colExtraValue.HeaderText = "추가 입력값";
-            colExtraValue.MinimumWidth = 10;
+            colExtraValue.MinimumWidth = 200;
             colExtraValue.Name = "colExtraValue";
-            colExtraValue.Width = 150;
             colExtraValue.ToolTipText = "입력할 텍스트 또는 선택할 옵션 표시명";
-            //
+            colExtraValue.Width = 200;
+            // 
             // btnAdd
             // 
             btnAdd.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
@@ -263,7 +284,7 @@ namespace RpaScHauStory
             // btnSave
             // 
             btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            btnSave.Location = new Point(1631, 724);
+            btnSave.Location = new Point(1800, 724);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(85, 38);
             btnSave.TabIndex = 1;
@@ -273,18 +294,28 @@ namespace RpaScHauStory
             // btnCancel
             // 
             btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            btnCancel.Location = new Point(1726, 724);
+            btnCancel.Location = new Point(1895, 724);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(85, 38);
             btnCancel.TabIndex = 0;
             btnCancel.Text = "취소";
             btnCancel.UseVisualStyleBackColor = true;
-            // 
+            //
+            // chkUserLayout
+            //
+            chkUserLayout.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            chkUserLayout.AutoSize = true;
+            chkUserLayout.Location = new Point(410, 730);
+            chkUserLayout.Name = "chkUserLayout";
+            chkUserLayout.Text = "사용자 레이아웃 기억";
+            chkUserLayout.UseVisualStyleBackColor = true;
+            //
             // FormSettings
             // 
             AutoScaleDimensions = new SizeF(14F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1826, 768);
+            ClientSize = new Size(1995, 768);
+            Controls.Add(chkUserLayout);
             Controls.Add(btnCancel);
             Controls.Add(btnSave);
             Controls.Add(btnMoveDown);
@@ -319,6 +350,13 @@ namespace RpaScHauStory
         private Label lblColumnsUnit;
         private Label lblTabs;
         private DataGridView dgvTabs;
+        private Button btnAdd;
+        private Button btnDelete;
+        private Button btnMoveUp;
+        private Button btnMoveDown;
+        private Button btnSave;
+        private Button btnCancel;
+        private CheckBox chkUserLayout;
         private DataGridViewTextBoxColumn colName;
         private DataGridViewCheckBoxColumn colAutoRun;
         private DataGridViewTextBoxColumn colUrl;
@@ -331,11 +369,5 @@ namespace RpaScHauStory
         private DataGridViewTextBoxColumn colExtraSelector;
         private DataGridViewComboBoxColumn colExtraSelectorType;
         private DataGridViewTextBoxColumn colExtraValue;
-        private Button btnAdd;
-        private Button btnDelete;
-        private Button btnMoveUp;
-        private Button btnMoveDown;
-        private Button btnSave;
-        private Button btnCancel;
     }
 }
