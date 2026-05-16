@@ -85,7 +85,8 @@ namespace RpaScHauStory
         /// <param name="pwdSelector">CSS 셀렉터 — null/empty면 자동 탐지</param>
         /// <param name="submitSelector">CSS 셀렉터 — null/empty면 자동 탐지</param>
         public async Task AutoLoginAsync(IPage page, string loginId, string loginPwd,
-            string? idSelector = null, string? pwdSelector = null, string? submitSelector = null)
+            string? idSelector = null, string? pwdSelector = null, string? submitSelector = null,
+            ExtraInput? extraInput = null)
         {
             // ── 비밀번호 필드 ─────────────────────────────────────
             var pwdLocator = string.IsNullOrEmpty(pwdSelector)
@@ -103,6 +104,19 @@ namespace RpaScHauStory
             catch (TimeoutException)
             {
                 return; // 로그인 폼 없음 또는 이미 로그인된 상태
+            }
+
+            // ── 추가 입력 필드 (ID 입력 전 처리 — 예: 단지 선택 드롭다운) ──
+            if (extraInput is not null && !string.IsNullOrEmpty(extraInput.Selector))
+            {
+                var extraField = page.Locator(extraInput.Selector).First;
+                if (await extraField.CountAsync() > 0 && await extraField.IsVisibleAsync())
+                {
+                    if (string.Equals(extraInput.SelectorType, "select", StringComparison.OrdinalIgnoreCase))
+                        await extraField.SelectOptionAsync(new SelectOptionValue { Label = extraInput.Value });
+                    else
+                        await extraField.FillAsync(extraInput.Value);
+                }
             }
 
             // ── ID 필드 ───────────────────────────────────────────

@@ -55,6 +55,15 @@ namespace RpaScHauStory
         public string IdSelector { get; set; } = "";  // 비어 있으면 자동 탐지
         public string PwdSelector { get; set; } = ""; // 비어 있으면 자동 탐지
         public string SubmitSelector { get; set; } = ""; // 비어 있으면 자동 탐지
+        public ExtraInput ExtraInput { get; set; } = new();
+    }
+
+    public class ExtraInput
+    {
+        public string Selector { get; set; } = "";
+        /// <summary>text: FillAsync, select: SelectOptionAsync(Label 기준)</summary>
+        public string SelectorType { get; set; } = "text";
+        public string Value { get; set; } = "";
     }
 
     public static class CredentialHelper

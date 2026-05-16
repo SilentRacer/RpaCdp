@@ -32,6 +32,9 @@ namespace RpaScHauStory
             colIdSelector = new DataGridViewTextBoxColumn();
             colPwdSelector = new DataGridViewTextBoxColumn();
             colSubmitSelector = new DataGridViewTextBoxColumn();
+            colExtraSelector = new DataGridViewTextBoxColumn();
+            colExtraSelectorType = new DataGridViewComboBoxColumn();
+            colExtraValue = new DataGridViewTextBoxColumn();
             btnAdd = new Button();
             btnDelete = new Button();
             btnMoveUp = new Button();
@@ -113,7 +116,7 @@ namespace RpaScHauStory
             dgvTabs.AllowUserToResizeRows = false;
             dgvTabs.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dgvTabs.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvTabs.Columns.AddRange(new DataGridViewColumn[] { colName, colAutoRun, colUrl, colAutoLogin, colLoginId, colLoginPwd, colIdSelector, colPwdSelector, colSubmitSelector });
+            dgvTabs.Columns.AddRange(new DataGridViewColumn[] { colName, colAutoRun, colUrl, colAutoLogin, colLoginId, colLoginPwd, colIdSelector, colPwdSelector, colSubmitSelector, colExtraSelector, colExtraSelectorType, colExtraValue });
             dgvTabs.Location = new Point(20, 199);
             dgvTabs.MultiSelect = false;
             dgvTabs.Name = "dgvTabs";
@@ -190,6 +193,32 @@ namespace RpaScHauStory
             colSubmitSelector.Name = "colSubmitSelector";
             colSubmitSelector.Width = 200;
             colSubmitSelector.ToolTipText = "로그온 버튼 CSS 셀렉터 (비워 두면 자동 탐지)";
+            //
+            // colExtraSelector
+            //
+            colExtraSelector.HeaderText = "추가 셀렉터";
+            colExtraSelector.MinimumWidth = 10;
+            colExtraSelector.Name = "colExtraSelector";
+            colExtraSelector.Width = 200;
+            colExtraSelector.ToolTipText = "로그온 전 추가 입력 필드 CSS 셀렉터";
+            //
+            // colExtraSelectorType
+            //
+            colExtraSelectorType.HeaderText = "셀렉터 종류";
+            colExtraSelectorType.MinimumWidth = 10;
+            colExtraSelectorType.Name = "colExtraSelectorType";
+            colExtraSelectorType.Width = 100;
+            colExtraSelectorType.ToolTipText = "text: 텍스트 입력 / select: 드롭다운 표시명 선택";
+            colExtraSelectorType.Items.AddRange(new object[] { "text", "select" });
+            colExtraSelectorType.DefaultCellStyle.NullValue = "text";
+            //
+            // colExtraValue
+            //
+            colExtraValue.HeaderText = "추가 입력값";
+            colExtraValue.MinimumWidth = 10;
+            colExtraValue.Name = "colExtraValue";
+            colExtraValue.Width = 150;
+            colExtraValue.ToolTipText = "입력할 텍스트 또는 선택할 옵션 표시명";
             //
             // btnAdd
             // 
@@ -299,6 +328,9 @@ namespace RpaScHauStory
         private DataGridViewTextBoxColumn colIdSelector;
         private DataGridViewTextBoxColumn colPwdSelector;
         private DataGridViewTextBoxColumn colSubmitSelector;
+        private DataGridViewTextBoxColumn colExtraSelector;
+        private DataGridViewComboBoxColumn colExtraSelectorType;
+        private DataGridViewTextBoxColumn colExtraValue;
         private Button btnAdd;
         private Button btnDelete;
         private Button btnMoveUp;

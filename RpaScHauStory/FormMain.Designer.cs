@@ -33,9 +33,9 @@ namespace RpaScHauStory
             pnlTabs = new FlowLayoutPanel();
             lblStatus = new Label();
             SuspendLayout();
-            //
+            // 
             // btnConnect
-            //
+            // 
             btnConnect.Location = new Point(20, 20);
             btnConnect.Name = "btnConnect";
             btnConnect.Size = new Size(150, 40);
@@ -43,9 +43,9 @@ namespace RpaScHauStory
             btnConnect.Text = "브라우저 연결";
             btnConnect.UseVisualStyleBackColor = true;
             btnConnect.Click += btnConnect_Click;
-            //
+            // 
             // btnSettings
-            //
+            // 
             btnSettings.Location = new Point(180, 20);
             btnSettings.Name = "btnSettings";
             btnSettings.Size = new Size(80, 40);
@@ -53,26 +53,25 @@ namespace RpaScHauStory
             btnSettings.Text = "설정";
             btnSettings.UseVisualStyleBackColor = true;
             btnSettings.Click += btnSettings_Click;
-            //
+            // 
             // pnlTabs
-            //
-            pnlTabs.FlowDirection = FlowDirection.LeftToRight;
+            // 
             pnlTabs.Location = new Point(20, 78);
             pnlTabs.Name = "pnlTabs";
             pnlTabs.Size = new Size(240, 0);
             pnlTabs.TabIndex = 2;
-            pnlTabs.WrapContents = true;
-            //
+            // 
             // lblStatus
-            //
+            // 
             lblStatus.AutoSize = true;
             lblStatus.Location = new Point(20, 94);
             lblStatus.Name = "lblStatus";
+            lblStatus.Size = new Size(109, 32);
             lblStatus.TabIndex = 3;
             lblStatus.Text = "대기 중...";
-            //
+            // 
             // FormMain
-            //
+            // 
             AutoScaleDimensions = new SizeF(14F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(280, 200);

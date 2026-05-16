@@ -42,9 +42,9 @@ namespace RpaScHauStory
         {
             pnlTabs.Controls.Clear();
 
-            const int btnWidth  = 200;
+            const int btnWidth = 200;
             const int btnHeight = 46;
-            const int btnGap    = 6;
+            const int btnGap = 6;
 
             int cols = Math.Max(1, _config.Columns);
 
@@ -63,8 +63,8 @@ namespace RpaScHauStory
             }
 
             // FlowLayoutPanel 너비를 열 수에 맞춰 설정하면 자동으로 줄바꿈됨
-            int panelWidth  = cols * (btnWidth + btnGap);
-            int rows        = (int)Math.Ceiling(_config.Tabs.Count / (double)cols);
+            int panelWidth = cols * (btnWidth + btnGap);
+            int rows = (int)Math.Ceiling(_config.Tabs.Count / (double)cols);
             int panelHeight = Math.Max(1, rows) * (btnHeight + btnGap);
 
             pnlTabs.Size = new Size(panelWidth, panelHeight);
@@ -81,14 +81,25 @@ namespace RpaScHauStory
 
             await RunTabActionAsync(tab.Name, async () =>
             {
-                var page = await _tabManager!.NavigateAsync(tab.Name, tab.Url);
+                // 이미 해당 URL이 열려 있고 자동 로그온이 켜진 경우 → 포커스만 (재로그온 방지)
+                var existingPage = _tabManager!.GetTab(tab.Name);
+                if (tab.AutoLogin && existingPage is not null &&
+                    string.Equals(existingPage.Url.TrimEnd('/'), tab.Url.TrimEnd('/'),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    await existingPage.BringToFrontAsync();
+                    return;
+                }
+
+                var page = await _tabManager.NavigateAsync(tab.Name, tab.Url);
                 if (tab.AutoLogin && !string.IsNullOrEmpty(tab.LoginId))
                 {
                     lblStatus.Text = $"[{tab.Name}] 자동 로그온 중...";
                     await _tabManager.AutoLoginAsync(page,
                         CredentialHelper.Decrypt(tab.LoginId),
                         CredentialHelper.Decrypt(tab.LoginPwd),
-                        tab.IdSelector, tab.PwdSelector, tab.SubmitSelector);
+                        tab.IdSelector, tab.PwdSelector, tab.SubmitSelector,
+                        tab.ExtraInput);
                 }
             });
         }
@@ -145,7 +156,8 @@ namespace RpaScHauStory
                         await _tabManager.AutoLoginAsync(page,
                             CredentialHelper.Decrypt(tab.LoginId),
                             CredentialHelper.Decrypt(tab.LoginPwd),
-                            tab.IdSelector, tab.PwdSelector, tab.SubmitSelector);
+                            tab.IdSelector, tab.PwdSelector, tab.SubmitSelector,
+                            tab.ExtraInput);
                     }
                 }
                 catch (Exception ex)
@@ -268,5 +280,6 @@ namespace RpaScHauStory
             foreach (Control ctrl in pnlTabs.Controls)
                 ctrl.Enabled = enabled;
         }
+
     }
 }

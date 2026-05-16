@@ -32,14 +32,17 @@ namespace RpaScHauStory
                     tab.AutoLogin,
                     CredentialHelper.Decrypt(tab.LoginId),
                     CredentialHelper.Decrypt(tab.LoginPwd),
-                    tab.IdSelector, tab.PwdSelector, tab.SubmitSelector);
+                    tab.IdSelector, tab.PwdSelector, tab.SubmitSelector,
+                    tab.ExtraInput.Selector,
+                    string.IsNullOrEmpty(tab.ExtraInput.SelectorType) ? "text" : tab.ExtraInput.SelectorType,
+                    tab.ExtraInput.Value);
         }
 
         // ── 버튼 핸들러 ───────────────────────────────────────────
 
         private void btnAdd_Click(object? sender, EventArgs e)
         {
-            int idx = dgvTabs.Rows.Add("새 버튼", false, "https://", false, "", "", "", "", "");
+            int idx = dgvTabs.Rows.Add("새 버튼", false, "https://", false, "", "", "", "", "", "", "text", "");
             dgvTabs.ClearSelection();
             dgvTabs.Rows[idx].Selected = true;
             dgvTabs.CurrentCell = dgvTabs.Rows[idx].Cells[0];
@@ -138,9 +141,12 @@ namespace RpaScHauStory
                 var autoLogin      = row.Cells[3].Value is true;
                 var loginId        = row.Cells[4].Value?.ToString()?.Trim() ?? "";
                 var loginPwd       = row.Cells[5].Value?.ToString()?.Trim() ?? "";
-                var idSelector     = row.Cells[6].Value?.ToString()?.Trim() ?? "";
-                var pwdSelector    = row.Cells[7].Value?.ToString()?.Trim() ?? "";
-                var submitSelector = row.Cells[8].Value?.ToString()?.Trim() ?? "";
+                var idSelector       = row.Cells[6].Value?.ToString()?.Trim() ?? "";
+                var pwdSelector      = row.Cells[7].Value?.ToString()?.Trim() ?? "";
+                var submitSelector   = row.Cells[8].Value?.ToString()?.Trim() ?? "";
+                var extraSelector    = row.Cells[9].Value?.ToString()?.Trim() ?? "";
+                var extraSelectorType = row.Cells[10].Value?.ToString()?.Trim() ?? "text";
+                var extraValue       = row.Cells[11].Value?.ToString()?.Trim() ?? "";
                 if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(url))
                     list.Add(new TabConfig
                     {
@@ -151,6 +157,12 @@ namespace RpaScHauStory
                         IdSelector     = idSelector,
                         PwdSelector    = pwdSelector,
                         SubmitSelector = submitSelector,
+                        ExtraInput = new ExtraInput
+                        {
+                            Selector     = extraSelector,
+                            SelectorType = extraSelectorType,
+                            Value        = extraValue,
+                        },
                     });
             }
             return list;
