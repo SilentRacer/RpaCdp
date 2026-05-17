@@ -48,6 +48,7 @@ namespace RpaScHauStory
         public string Name { get; set; } = "";
         public bool AutoRun { get; set; } = false;
         public string Url { get; set; } = "";
+        public string CustomTitle { get; set; } = ""; // 페이지 제목이 중복될 때 강제 설정할 고유 제목
         public bool AutoLogin { get; set; } = false;
         public string LoginId { get; set; } = "";     // DPAPI 암호화 저장
         public string LoginPwd { get; set; } = "";    // DPAPI 암호화 저장
@@ -55,6 +56,8 @@ namespace RpaScHauStory
         public string PwdSelector { get; set; } = ""; // 비어 있으면 자동 탐지
         public string SubmitSelector { get; set; } = ""; // 비어 있으면 자동 탐지
         public ExtraInput ExtraInput { get; set; } = new();
+        public string TableSelector { get; set; } = "";  // 비어 있으면 자동 탐지 (행이 가장 많은 테이블)
+        public string PagingSelector { get; set; } = ""; // 비어 있으면 자동 탐지 (GoToPage 패턴)
     }
 
     public class ExtraInput

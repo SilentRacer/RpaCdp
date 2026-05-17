@@ -35,6 +35,9 @@ namespace RpaScHauStory
             colExtraSelector = new DataGridViewTextBoxColumn();
             colExtraSelectorType = new DataGridViewComboBoxColumn();
             colExtraValue = new DataGridViewTextBoxColumn();
+            colCustomTitle = new DataGridViewTextBoxColumn();
+            colTableSelector = new DataGridViewTextBoxColumn();
+            colPagingSelector = new DataGridViewTextBoxColumn();
             btnAdd = new Button();
             btnDelete = new Button();
             btnMoveUp = new Button();
@@ -110,7 +113,7 @@ namespace RpaScHauStory
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
             dgvTabs.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dgvTabs.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvTabs.Columns.AddRange(new DataGridViewColumn[] { colName, colAutoRun, colUrl, colAutoLogin, colLoginId, colLoginPwd, colIdSelector, colPwdSelector, colSubmitSelector, colExtraSelector, colExtraSelectorType, colExtraValue });
+            dgvTabs.Columns.AddRange(new DataGridViewColumn[] { colName, colAutoRun, colUrl, colCustomTitle, colAutoLogin, colLoginId, colLoginPwd, colIdSelector, colPwdSelector, colSubmitSelector, colExtraSelector, colExtraSelectorType, colExtraValue, colTableSelector, colPagingSelector });
             dgvTabs.Location = new Point(20, 152);
             dgvTabs.MultiSelect = false;
             dgvTabs.Name = "dgvTabs";
@@ -220,9 +223,33 @@ namespace RpaScHauStory
             colExtraValue.Name = "colExtraValue";
             colExtraValue.ToolTipText = "입력할 텍스트 또는 선택할 옵션 표시명";
             colExtraValue.Width = 300;
-            // 
+            //
+            // colCustomTitle
+            //
+            colCustomTitle.HeaderText = "탭 제목\n(앞에 추가)";
+            colCustomTitle.MinimumWidth = 100;
+            colCustomTitle.Name = "colCustomTitle";
+            colCustomTitle.ToolTipText = "페이지 제목이 중복될 때 제목앞에　추가. 탭 전환 감지에 사용됩니다. (비워 두면 실제 페이지 제목 사용)";
+            colCustomTitle.Width = 200;
+            //
+            // colTableSelector
+            //
+            colTableSelector.HeaderText = "테이블\n셀렉터";
+            colTableSelector.MinimumWidth = 100;
+            colTableSelector.Name = "colTableSelector";
+            colTableSelector.ToolTipText = "데이터 테이블 CSS 셀렉터 (비워 두면 행이 가장 많은 테이블 자동 선택)";
+            colTableSelector.Width = 200;
+            //
+            // colPagingSelector
+            //
+            colPagingSelector.HeaderText = "페이징\n셀렉터";
+            colPagingSelector.MinimumWidth = 100;
+            colPagingSelector.Name = "colPagingSelector";
+            colPagingSelector.ToolTipText = "페이징 컨테이너 CSS 셀렉터 (비워 두면 id에 Paging 포함된 요소 자동 탐지)";
+            colPagingSelector.Width = 200;
+            //
             // btnAdd
-            // 
+            //
             btnAdd.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             btnAdd.Location = new Point(24, 641);
             btnAdd.Name = "btnAdd";
@@ -360,5 +387,8 @@ namespace RpaScHauStory
         private DataGridViewTextBoxColumn colExtraSelector;
         private DataGridViewComboBoxColumn colExtraSelectorType;
         private DataGridViewTextBoxColumn colExtraValue;
+        private DataGridViewTextBoxColumn colCustomTitle;
+        private DataGridViewTextBoxColumn colTableSelector;
+        private DataGridViewTextBoxColumn colPagingSelector;
     }
 }

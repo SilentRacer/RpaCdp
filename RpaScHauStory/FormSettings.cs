@@ -12,18 +12,23 @@ namespace RpaScHauStory
 
         private static readonly (string Name, int Width)[] DefaultColumnWidths =
         [
-            ("colName",              200),
-            ("colAutoRun",            80),
-            ("colUrl",               700),
-            ("colAutoLogin",         120),
-            ("colLoginId",           200),
-            ("colLoginPwd",          260),
-            ("colIdSelector",        200),
-            ("colPwdSelector",       200),
-            ("colSubmitSelector",    200),
-            ("colExtraSelector",     200),
-            ("colExtraSelectorType", 200),
-            ("colExtraValue",        400),
+            // C:\ProgramData\KTJ\CDP\appsettings.json파일이 있으면 프로젝트 폴더의 appsettings.json은 무시됩니다. 
+            // IDE에서 열린 파일은 최초 실행 시 기본값으로만 쓰이고 저장된 이후에는 저장된 파일 사용.
+            ("colName",              200),    // - Name          : 버튼 표시 이름
+            ("colAutoRun",            80),    // - AutoRun       : true면 앱 시작 시 자동으로 해당 탭을 열어 이동
+            ("colUrl",               700),    // - Url           : 클릭 시 이동할 주소
+            ("colCustomTitle",       200),    // - CustomTitle   : 탭 제목 앞에 추가할 문자열 같은 도메인 탭이 여러 개일 때 탭 전환 감지용으로 사용
+            ("colAutoLogin",         120),    // - AutoLogin     : true면 탭 열기 후 자동 로그온 시도
+            ("colLoginId",           200),    // - LoginId       : 로그온 아이디   (DPAPI 암호화 저장 — 직접 편집 금지)
+            ("colLoginPwd",          260),    // - LoginPwd      : 로그온 비밀번호 (DPAPI 암호화 저장 — 직접 편집 금지)
+            ("colIdSelector",        200),    // - IdSelector    : 아이디 입력 필드 CSS 셀렉터    (비워 두면 자동 탐지)
+            ("colPwdSelector",       200),    // - PwdSelector   : 비밀번호 입력 필드 CSS 셀렉터  (비워 두면 자동 탐지)
+            ("colSubmitSelector",    200),    // - SubmitSelector: 로그온 버튼 CSS 셀렉터         (비워 두면 자동 탐지)
+            ("colExtraSelector",     200),    // - ExtraInput    : 로그온 전 추가 입력 (예: 단지 선택 드롭다운)
+            ("colExtraSelectorType", 200),    // - SelectorType  : text(기본, FillAsync) 또는 select(드롭다운)
+            ("colExtraValue",        400),    // - Value          : 입력할 값 또는 선택할 옵션 표시명
+            ("colTableSelector",     200),    // - TableSelector  : 데이터 테이블 CSS 셀렉터 (비워 두면 자동 탐지)
+            ("colPagingSelector",    200),    // - PagingSelector : 페이징 컨테이너 CSS 셀렉터 (비워 두면 자동 탐지)
         ];
 
         public FormSettings(AppConfig config)
@@ -64,13 +69,16 @@ namespace RpaScHauStory
             foreach (var tab in _config.Tabs)
                 dgvTabs.Rows.Add(
                     tab.Name, tab.AutoRun, tab.Url,
+                    tab.CustomTitle,
                     tab.AutoLogin,
                     CredentialHelper.Decrypt(tab.LoginId),
                     CredentialHelper.Decrypt(tab.LoginPwd),
                     tab.IdSelector, tab.PwdSelector, tab.SubmitSelector,
                     tab.ExtraInput.Selector,
                     string.IsNullOrEmpty(tab.ExtraInput.SelectorType) ? "text" : tab.ExtraInput.SelectorType,
-                    tab.ExtraInput.Value);
+                    tab.ExtraInput.Value,
+                    tab.TableSelector,
+                    tab.PagingSelector);
         }
 
         private void FormSettings_FormClosed(object? sender, FormClosedEventArgs e)
@@ -132,7 +140,7 @@ namespace RpaScHauStory
         private void dgvTabs_CellClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (!chkShowPassword.Checked || e.RowIndex < 0) return;
-            int idCol = dgvTabs.Columns["colLoginId"]!.Index;
+            int idCol  = dgvTabs.Columns["colLoginId"]!.Index;
             int pwdCol = dgvTabs.Columns["colLoginPwd"]!.Index;
             if (e.ColumnIndex == idCol || e.ColumnIndex == pwdCol)
                 _revealedCell = (e.ColumnIndex, e.RowIndex);
@@ -179,7 +187,7 @@ namespace RpaScHauStory
 
         private void btnAdd_Click(object? sender, EventArgs e)
         {
-            int idx = dgvTabs.Rows.Add("새 버튼", false, "https://", false, "", "", "", "", "", "", "text", "");
+            int idx = dgvTabs.Rows.Add("새 버튼", false, "https://", "", false, "", "", "", "", "", "", "text", "", "", "");
             dgvTabs.ClearSelection();
             dgvTabs.Rows[idx].Selected = true;
             dgvTabs.CurrentCell = dgvTabs.Rows[idx].Cells[0];
@@ -259,36 +267,42 @@ namespace RpaScHauStory
             var list = new List<TabConfig>();
             foreach (DataGridViewRow row in dgvTabs.Rows)
             {
-                var name = row.Cells[0].Value?.ToString()?.Trim() ?? "";
-                var autoRun = row.Cells[1].Value is true;
-                var url = row.Cells[2].Value?.ToString()?.Trim() ?? "";
-                var autoLogin = row.Cells[3].Value is true;
-                var loginId = row.Cells[4].Value?.ToString()?.Trim() ?? "";
-                var loginPwd = row.Cells[5].Value?.ToString()?.Trim() ?? "";
-                var idSelector = row.Cells[6].Value?.ToString()?.Trim() ?? "";
-                var pwdSelector = row.Cells[7].Value?.ToString()?.Trim() ?? "";
-                var submitSelector = row.Cells[8].Value?.ToString()?.Trim() ?? "";
-                var extraSelector = row.Cells[9].Value?.ToString()?.Trim() ?? "";
-                var extraSelectorType = row.Cells[10].Value?.ToString()?.Trim() ?? "text";
-                var extraValue = row.Cells[11].Value?.ToString()?.Trim() ?? "";
+                var name             = row.Cells[0].Value?.ToString()?.Trim() ?? "";
+                var autoRun          = row.Cells[1].Value is true;
+                var url              = row.Cells[2].Value?.ToString()?.Trim() ?? "";
+                var customTitle      = row.Cells[3].Value?.ToString()?.Trim() ?? "";
+                var autoLogin        = row.Cells[4].Value is true;
+                var loginId          = row.Cells[5].Value?.ToString()?.Trim() ?? "";
+                var loginPwd         = row.Cells[6].Value?.ToString()?.Trim() ?? "";
+                var idSelector       = row.Cells[7].Value?.ToString()?.Trim() ?? "";
+                var pwdSelector      = row.Cells[8].Value?.ToString()?.Trim() ?? "";
+                var submitSelector   = row.Cells[9].Value?.ToString()?.Trim() ?? "";
+                var extraSelector    = row.Cells[10].Value?.ToString()?.Trim() ?? "";
+                var extraSelectorType = row.Cells[11].Value?.ToString()?.Trim() ?? "text";
+                var extraValue       = row.Cells[12].Value?.ToString()?.Trim() ?? "";
+                var tableSelector    = row.Cells[13].Value?.ToString()?.Trim() ?? "";
+                var pagingSelector   = row.Cells[14].Value?.ToString()?.Trim() ?? "";
                 if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(url))
                     list.Add(new TabConfig
                     {
-                        Name = name,
-                        AutoRun = autoRun,
-                        Url = url,
-                        AutoLogin = autoLogin,
-                        LoginId = CredentialHelper.Encrypt(loginId),
-                        LoginPwd = CredentialHelper.Encrypt(loginPwd),
-                        IdSelector = idSelector,
-                        PwdSelector = pwdSelector,
-                        SubmitSelector = submitSelector,
+                        Name            = name,
+                        AutoRun         = autoRun,
+                        Url             = url,
+                        CustomTitle     = customTitle,
+                        AutoLogin       = autoLogin,
+                        LoginId         = CredentialHelper.Encrypt(loginId),
+                        LoginPwd        = CredentialHelper.Encrypt(loginPwd),
+                        IdSelector      = idSelector,
+                        PwdSelector     = pwdSelector,
+                        SubmitSelector  = submitSelector,
                         ExtraInput = new ExtraInput
                         {
-                            Selector = extraSelector,
+                            Selector     = extraSelector,
                             SelectorType = extraSelectorType,
-                            Value = extraValue,
+                            Value        = extraValue,
                         },
+                        TableSelector   = tableSelector,
+                        PagingSelector  = pagingSelector,
                     });
             }
             return list;

@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Net.Http;
+using ClosedXML.Excel;
+using Microsoft.Playwright;
 
 namespace RpaScHauStory
 {
@@ -58,17 +60,10 @@ namespace RpaScHauStory
                 pnlTabs.Controls.Add(btn);
             }
 
-            // FlowLayoutPanel 너비를 열 수에 맞춰 설정하면 자동으로 줄바꿈됨
             int panelWidth = cols * (btnWidth + btnGap);
             int rows = (int)Math.Ceiling(_config.Tabs.Count / (double)cols);
             int panelHeight = Math.Max(1, rows) * (btnHeight + btnGap);
-
             pnlTabs.Size = new Size(panelWidth, panelHeight);
-
-            // 폼 너비를 패널에 맞게 조정 (좌우 여백 각 20px)
-            int formWidth = Math.Max(280, pnlTabs.Left + panelWidth + 20);
-            lblStatus.Top = pnlTabs.Bottom + 12;
-            ClientSize = new Size(formWidth, lblStatus.Bottom + 20);
         }
 
         private async void TabButton_Click(object? sender, EventArgs e)
@@ -87,8 +82,9 @@ namespace RpaScHauStory
                     return;
                 }
 
-                var page = await _tabManager.NavigateAsync(tab.Name, tab.Url);
-                if (tab.AutoLogin ) //&& !string.IsNullOrEmpty(tab.LoginId))
+                var page = await _tabManager.NavigateAsync(tab.Name, tab.Url,
+                    customTitle: string.IsNullOrEmpty(tab.CustomTitle) ? null : tab.CustomTitle);
+                if (tab.AutoLogin)
                 {
                     lblStatus.Text = $"[{tab.Name}] 자동 로그온 중...";
                     await _tabManager.AutoLoginAsync(page,
@@ -120,6 +116,7 @@ namespace RpaScHauStory
                 lblStatus.Text = "브라우저 연결 중...";
                 _tabManager = new BrowserTabManager(_config.CdpEndpoint);
                 await _tabManager.ConnectAsync();
+                _tabManager.RegisterTabSwitchHook();
 
                 lblStatus.Text = "연결됨";
                 SetTabButtonsEnabled(true);
@@ -145,7 +142,8 @@ namespace RpaScHauStory
                 try
                 {
                     lblStatus.Text = $"[자동 실행] {tab.Name}...";
-                    var page = await _tabManager!.NavigateAsync(tab.Name, tab.Url);
+                    var page = await _tabManager!.NavigateAsync(tab.Name, tab.Url,
+                        customTitle: string.IsNullOrEmpty(tab.CustomTitle) ? null : tab.CustomTitle);
                     if (tab.AutoLogin && !string.IsNullOrEmpty(tab.LoginId))
                     {
                         lblStatus.Text = $"[자동 로그온] {tab.Name}...";
@@ -243,6 +241,188 @@ namespace RpaScHauStory
             await ConnectBrowserAsync();
         }
 
+        private async void btnSaveExcel_Click(object? sender, EventArgs e)
+        {
+            if (_tabManager is null || !_tabManager.IsConnected)
+            {
+                lblStatus.Text = "브라우저가 연결되어 있지 않습니다.";
+                return;
+            }
+
+            btnSaveExcel.Enabled = false;
+            try
+            {
+                lblStatus.Text = "활성 탭 확인 중...";
+                await _tabManager.RefreshActivePageAsync();
+                var activePage = _tabManager.ActivePage;
+
+                if (activePage is null)
+                {
+                    lblStatus.Text = "활성 탭을 찾을 수 없습니다. Chrome 탭을 클릭 후 다시 시도하세요.";
+                    return;
+                }
+
+                var tabConfig = FindTabConfigForPage(activePage);
+                var allRows = await ExtractAllPagesAsync(activePage, tabConfig);
+
+                if (allRows.Count == 0)
+                {
+                    lblStatus.Text = "테이블 데이터를 찾을 수 없습니다.";
+                    return;
+                }
+
+                using var sfd = new SaveFileDialog
+                {
+                    Filter = "Excel 파일 (*.xlsx)|*.xlsx",
+                    FileName = $"데이터_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx",
+                };
+                if (sfd.ShowDialog(this) != DialogResult.OK)
+                {
+                    lblStatus.Text = "저장 취소됨";
+                    return;
+                }
+
+                SaveToExcel(allRows, sfd.FileName);
+                lblStatus.Text = $"저장 완료: {Path.GetFileName(sfd.FileName)} ({allRows.Count - 1}행)";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Excel저장] {ex}");
+                lblStatus.Text = $"Excel 저장 오류: {ex.Message}";
+            }
+            finally
+            {
+                btnSaveExcel.Enabled = true;
+            }
+        }
+
+        // ── Excel 저장 헬퍼 ───────────────────────────────────────
+
+        private TabConfig? FindTabConfigForPage(IPage page)
+        {
+            foreach (var tab in _config.Tabs)
+            {
+                var registeredPage = _tabManager!.GetTab(tab.Name);
+                if (registeredPage == page) return tab;
+            }
+            // URL 기반 폴백
+            foreach (var tab in _config.Tabs)
+            {
+                if (string.Equals(page.Url.TrimEnd('/'), tab.Url.TrimEnd('/'),
+                        StringComparison.OrdinalIgnoreCase))
+                    return tab;
+            }
+            return null;
+        }
+
+        private async Task<List<List<string>>> ExtractAllPagesAsync(IPage page, TabConfig? tabConfig)
+        {
+            var allRows = new List<List<string>>();
+            bool isFirstPage = true;
+
+            for (int pageNum = 0; pageNum < 1000; pageNum++)
+            {
+                lblStatus.Text = $"데이터 추출 중... ({pageNum + 1}페이지)";
+                Application.DoEvents();
+
+                var rows = await ExtractTableDataAsync(page, tabConfig?.TableSelector);
+                if (rows.Count == 0) break;
+
+                if (isFirstPage)
+                {
+                    allRows.AddRange(rows);
+                    isFirstPage = false;
+                }
+                else
+                {
+                    // 헤더 행은 첫 페이지에서만 포함
+                    allRows.AddRange(rows.Count > 1 ? rows.Skip(1) : rows);
+                }
+
+                bool moved = await TryGoToNextPageAsync(page, tabConfig?.PagingSelector);
+                if (!moved) break;
+
+                try
+                {
+                    await page.WaitForLoadStateAsync(LoadState.NetworkIdle,
+                        new PageWaitForLoadStateOptions { Timeout = 10000 });
+                }
+                catch { await Task.Delay(1000); }
+            }
+
+            return allRows;
+        }
+
+        private static async Task<List<List<string>>> ExtractTableDataAsync(IPage page, string? tableSelector)
+        {
+            var result = await page.EvaluateAsync<string[][]>("""
+                selector => {
+                    const table = selector
+                        ? document.querySelector(selector)
+                        : [...document.querySelectorAll('table')]
+                            .sort((a, b) => b.rows.length - a.rows.length)[0];
+                    if (!table) return [];
+                    return [...table.rows].map(row =>
+                        [...row.cells].map(cell => cell.innerText.trim().replace(/\s+/g, ' ')));
+                }
+                """, tableSelector ?? "");
+
+            return result?.Select(r => r.ToList()).ToList() ?? [];
+        }
+
+        private static async Task<bool> TryGoToNextPageAsync(IPage page, string? pagingSelector)
+        {
+            return await page.EvaluateAsync<bool>("""
+                selector => {
+                    const paging = selector
+                        ? document.querySelector(selector)
+                        : [...document.querySelectorAll('[id],[class]')]
+                            .find(el => /paging/i.test(el.id) || /paging|pagination/i.test(el.className));
+                    if (!paging) return false;
+
+                    // 현재 페이지 번호 (강조된 항목)
+                    const activeEl = paging.querySelector('strong, b, .on, .active, .current, [class*="on"], [class*="selected"]');
+                    const currentPage = activeEl ? parseInt(activeEl.textContent.trim()) : NaN;
+
+                    if (!isNaN(currentPage)) {
+                        const links = [...paging.querySelectorAll('a')];
+                        const nextLink = links.find(a => parseInt(a.textContent.trim()) === currentPage + 1);
+                        if (nextLink) { nextLink.click(); return true; }
+                    }
+
+                    // "다음" 텍스트 버튼 찾기
+                    const allAnchors = [...paging.querySelectorAll('a')];
+                    const nextByText = allAnchors.find(a => /^(다음|next|>|▶)$/i.test(a.textContent.trim()));
+                    if (nextByText) { nextByText.click(); return true; }
+
+                    return false;
+                }
+                """, pagingSelector ?? "");
+        }
+
+        private static void SaveToExcel(List<List<string>> rows, string filePath)
+        {
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("데이터");
+
+            for (int r = 0; r < rows.Count; r++)
+            {
+                var row = rows[r];
+                for (int c = 0; c < row.Count; c++)
+                    ws.Cell(r + 1, c + 1).Value = row[c];
+            }
+
+            if (rows.Count > 0)
+            {
+                var headerRow = ws.Row(1);
+                headerRow.Style.Font.Bold = true;
+                headerRow.Style.Fill.BackgroundColor = XLColor.FromArgb(189, 215, 238);
+            }
+
+            ws.Columns().AdjustToContents(1, 60);
+            wb.SaveAs(filePath);
+        }
+
         // ── 헬퍼 ─────────────────────────────────────────────────
 
         private async Task RunTabActionAsync(string tabName, Func<Task> action)
@@ -277,9 +457,6 @@ namespace RpaScHauStory
                 ctrl.Enabled = enabled;
         }
 
-        private void FormMain_Load_1(object sender, EventArgs e)
-        {
-
-        }
+        private void FormMain_Load_1(object sender, EventArgs e) { }
     }
 }
