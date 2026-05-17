@@ -197,7 +197,7 @@ namespace RpaScHauStory
             // colExtraSelector
             // 
             colExtraSelector.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
-            colExtraSelector.HeaderText = "추가 셀렉터";
+            colExtraSelector.HeaderText = "추가 셀렉터\n(Class or ID)";
             colExtraSelector.MinimumWidth = 10;
             colExtraSelector.Name = "colExtraSelector";
             colExtraSelector.ToolTipText = "로그온 전 추가 입력 필드 CSS 셀렉터";
@@ -208,7 +208,7 @@ namespace RpaScHauStory
             colExtraSelectorType.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
             dataGridViewCellStyle2.NullValue = "text";
             colExtraSelectorType.DefaultCellStyle = dataGridViewCellStyle2;
-            colExtraSelectorType.HeaderText = "셀렉터 종류";
+            colExtraSelectorType.HeaderText = "추가 셀렉터\n종류";
             colExtraSelectorType.Items.AddRange(new object[] { "text", "select" });
             colExtraSelectorType.MinimumWidth = 10;
             colExtraSelectorType.Name = "colExtraSelectorType";
@@ -218,7 +218,7 @@ namespace RpaScHauStory
             // colExtraValue
             // 
             colExtraValue.AutoSizeMode = DataGridViewAutoSizeColumnMode.DisplayedCellsExceptHeader;
-            colExtraValue.HeaderText = "추가 내용";
+            colExtraValue.HeaderText = "추가 셀렉터\n 값(단지명)";
             colExtraValue.MinimumWidth = 300;
             colExtraValue.Name = "colExtraValue";
             colExtraValue.ToolTipText = "입력할 텍스트 또는 선택할 옵션 표시명";
@@ -234,7 +234,7 @@ namespace RpaScHauStory
             //
             // colTableSelector
             //
-            colTableSelector.HeaderText = "테이블\n셀렉터";
+            colTableSelector.HeaderText = "테이블 셀렉터\n(Class or ID)";
             colTableSelector.MinimumWidth = 100;
             colTableSelector.Name = "colTableSelector";
             colTableSelector.ToolTipText = "데이터 테이블 CSS 셀렉터 (비워 두면 행이 가장 많은 테이블 자동 선택)";
@@ -242,7 +242,7 @@ namespace RpaScHauStory
             //
             // colPagingSelector
             //
-            colPagingSelector.HeaderText = "페이징\n셀렉터";
+            colPagingSelector.HeaderText = "페이징 셀렉터\n(Class or ID)";
             colPagingSelector.MinimumWidth = 100;
             colPagingSelector.Name = "colPagingSelector";
             colPagingSelector.ToolTipText = "페이징 컨테이너 CSS 셀렉터 (비워 두면 id에 Paging 포함된 요소 자동 탐지)";

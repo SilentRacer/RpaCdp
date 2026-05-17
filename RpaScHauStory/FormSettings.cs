@@ -27,8 +27,8 @@ namespace RpaScHauStory
             ("colExtraSelector",     200),    // - ExtraInput    : 로그온 전 추가 입력 (예: 단지 선택 드롭다운)
             ("colExtraSelectorType", 200),    // - SelectorType  : text(기본, FillAsync) 또는 select(드롭다운)
             ("colExtraValue",        400),    // - Value          : 입력할 값 또는 선택할 옵션 표시명
-            ("colTableSelector",     200),    // - TableSelector  : 데이터 테이블 CSS 셀렉터 (비워 두면 자동 탐지)
-            ("colPagingSelector",    200),    // - PagingSelector : 페이징 컨테이너 CSS 셀렉터 (비워 두면 자동 탐지)
+            ("colTableSelector",     500),    // - TableSelector  : 데이터 테이블 CSS 셀렉터 (비워 두면 자동 탐지)
+            ("colPagingSelector",    500),    // - PagingSelector : 페이징 컨테이너 CSS 셀렉터 (비워 두면 자동 탐지)
         ];
 
         public FormSettings(AppConfig config)
