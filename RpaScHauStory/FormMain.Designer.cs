@@ -38,19 +38,19 @@ namespace RpaScHauStory
             // 
             btnConnect.Location = new Point(20, 20);
             btnConnect.Name = "btnConnect";
-            btnConnect.Size = new Size(150, 40);
+            btnConnect.Size = new Size(200, 46);
             btnConnect.TabIndex = 0;
-            btnConnect.Text = "브라우저 연결";
+            btnConnect.Text = "연결 확인";
             btnConnect.UseVisualStyleBackColor = true;
             btnConnect.Click += btnConnect_Click;
             // 
             // btnSettings
             // 
-            btnSettings.Location = new Point(180, 20);
+            btnSettings.Location = new Point(240, 20);
             btnSettings.Name = "btnSettings";
-            btnSettings.Size = new Size(80, 40);
+            btnSettings.Size = new Size(200, 46);
             btnSettings.TabIndex = 1;
-            btnSettings.Text = "설정";
+            btnSettings.Text = "환경 설정";
             btnSettings.UseVisualStyleBackColor = true;
             btnSettings.Click += btnSettings_Click;
             // 
@@ -64,7 +64,7 @@ namespace RpaScHauStory
             // lblStatus
             // 
             lblStatus.AutoSize = true;
-            lblStatus.Location = new Point(20, 94);
+            lblStatus.Location = new Point(20, 81);
             lblStatus.Name = "lblStatus";
             lblStatus.Size = new Size(109, 32);
             lblStatus.TabIndex = 3;
@@ -74,13 +74,14 @@ namespace RpaScHauStory
             // 
             AutoScaleDimensions = new SizeF(14F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(280, 200);
+            ClientSize = new Size(574, 333);
             Controls.Add(lblStatus);
             Controls.Add(pnlTabs);
             Controls.Add(btnSettings);
             Controls.Add(btnConnect);
             Name = "FormMain";
             Text = "RPA - 탭 관리";
+            Load += FormMain_Load_1;
             ResumeLayout(false);
             PerformLayout();
         }

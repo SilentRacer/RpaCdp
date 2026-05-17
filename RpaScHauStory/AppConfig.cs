@@ -6,7 +6,6 @@ namespace RpaScHauStory
     public class AppConfig
     {
         public string CdpEndpoint { get; set; } = "http://127.0.0.1:9222";
-        public bool AutoConnect { get; set; } = true;
         public int Columns { get; set; } = 1;
         public List<TabConfig> Tabs { get; set; } = [];
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Playwright;
 
 namespace RpaScHauStory
@@ -88,72 +89,76 @@ namespace RpaScHauStory
             string? idSelector = null, string? pwdSelector = null, string? submitSelector = null,
             ExtraInput? extraInput = null)
         {
-            // ── 비밀번호 필드 ─────────────────────────────────────
-            var pwdLocator = string.IsNullOrEmpty(pwdSelector)
-                ? page.Locator("input[type='password']").First
-                : page.Locator(pwdSelector).First;
+            bool hasCredentials = !string.IsNullOrEmpty(loginId) && !string.IsNullOrEmpty(loginPwd);
+            ILocator? pwdLocator = null;
 
-            try
+            if (hasCredentials)
             {
-                await pwdLocator.WaitForAsync(new LocatorWaitForOptions
-                {
-                    State = WaitForSelectorState.Visible,
-                    Timeout = 5000,
-                });
-            }
-            catch (TimeoutException)
-            {
-                return; // 로그인 폼 없음 또는 이미 로그인된 상태
-            }
+                // ── 비밀번호 필드 ─────────────────────────────────────
+                pwdLocator = string.IsNullOrEmpty(pwdSelector)
+                    ? page.Locator("input[type='password']").First
+                    : page.Locator(pwdSelector).First;
 
-            // ── 추가 입력 필드 (ID 입력 전 처리 — 예: 단지 선택 드롭다운) ──
-            if (extraInput is not null && !string.IsNullOrEmpty(extraInput.Selector))
-            {
-                //var extraField = page.Locator(extraInput.Selector).First;
-                var extraField = page.Locator($"select[name='{extraInput.Selector}']").First;
-                if (await extraField.CountAsync() > 0 && await extraField.IsVisibleAsync())
+                try
                 {
-                    if (string.Equals(extraInput.SelectorType, "select", StringComparison.OrdinalIgnoreCase))
-                        await extraField.SelectOptionAsync(new SelectOptionValue { Label = extraInput.Value });
-                    else
-                        await extraField.FillAsync(extraInput.Value);
-                }
-            }
-
-            // ── ID 필드 ───────────────────────────────────────────
-            if (!string.IsNullOrEmpty(idSelector))
-            {
-                var field = page.Locator(idSelector).First;
-                if (await field.CountAsync() > 0)
-                    await field.FillAsync(loginId);
-            }
-            else
-            {
-                string[] fallbackIdSelectors =
-                [
-                    "input[name='id']",
-                    "input[name='userId']",
-                    "input[name='loginId']",
-                    "input[name='username']",
-                    "input[name='user_id']",
-                    "input[name='account']",
-                    "input[name='email']",
-                    "input[type='email']",
-                    "input[type='text']",
-                ];
-                // 앞에나오는 것이 ID이고 두번째 나오는 것이 PWD이므로 아래처럼 적용
-                foreach (var sel in fallbackIdSelectors)
-                {
-                    var field = page.Locator(sel).First;
-                    if (await field.CountAsync() > 0 && await field.IsVisibleAsync())
+                    await pwdLocator.WaitForAsync(new LocatorWaitForOptions
                     {
-                        await field.FillAsync(loginId);
-                        break;
+                        State = WaitForSelectorState.Visible,
+                        Timeout = 5000,
+                    });
+                }
+                catch (TimeoutException)
+                {
+                    return; // 로그인 폼 없음 또는 이미 로그인된 상태
+                }
+
+                // ── 추가 입력 필드 (ID 입력 전 처리 — 예: 단지 선택 드롭다운) ──
+                if (extraInput is not null && !string.IsNullOrEmpty(extraInput.Selector))
+                {
+                    var extraField = page.Locator($"select[name='{extraInput.Selector}']").First;
+                    if (await extraField.CountAsync() > 0 && await extraField.IsVisibleAsync())
+                    {
+                        if (string.Equals(extraInput.SelectorType, "select", StringComparison.OrdinalIgnoreCase))
+                            await extraField.SelectOptionAsync(new SelectOptionValue { Label = extraInput.Value });
+                        else
+                            await extraField.FillAsync(extraInput.Value);
                     }
                 }
-            }
 
-            await pwdLocator.FillAsync(loginPwd);
+                // ── ID 필드 ───────────────────────────────────────────
+                if (!string.IsNullOrEmpty(idSelector))
+                {
+                    var field = page.Locator(idSelector).First;
+                    if (await field.CountAsync() > 0)
+                        await field.FillAsync(loginId);
+                }
+                else
+                {
+                    string[] fallbackIdSelectors =
+                    [
+                        "input[name='id']",
+                        "input[name='userId']",
+                        "input[name='loginId']",
+                        "input[name='username']",
+                        "input[name='user_id']",
+                        "input[name='account']",
+                        "input[name='email']",
+                        "input[type='email']",
+                        "input[type='text']",
+                    ];
+                    foreach (var sel in fallbackIdSelectors)
+                    {
+                        var field = page.Locator(sel).First;
+                        if (await field.CountAsync() > 0 && await field.IsVisibleAsync())
+                        {
+                            await field.FillAsync(loginId);
+                            break;
+                        }
+                    }
+                }
+
+                await pwdLocator.FillAsync(loginPwd);
+            }
 
             // ── 제출 버튼 ─────────────────────────────────────────
             if (!string.IsNullOrEmpty(submitSelector))
@@ -169,26 +174,56 @@ namespace RpaScHauStory
             {
                 string[] fallbackSubmitSelectors =
                 [
-                    "button[type='submit']",
-                    "input[type='submit']",
+                    "button.login",                 // 주택관리사 협회 로그인 버튼이 여기에 해당  <button class="login"> 
                     "button:has-text('로그인')",
                     "button:has-text('login')",
                     "button:has-text('Login')",
-                    "a:has-text('로그인')",
+                    "a:has-text('로그인')", 
+                    "input[type='submit']",
+                    //"button[type='submit']",      // 가장 일반적인 제출 버튼 그런데 주관사는 검색버튼이라서 주석처리
+                    
                 ];
+                Debug.WriteLine($"[로그인 체크~~~ ] {page.Url}");
                 foreach (var sel in fallbackSubmitSelectors)
                 {
                     var btn = page.Locator(sel).First;
-                    if (await btn.CountAsync() > 0 && await btn.IsVisibleAsync())
+                    int count = await btn.CountAsync();
+                    bool visible = await btn.IsVisibleAsync();
+
+                    Debug.WriteLine($"[로그인 체크] sel={sel} count={count} visible={visible}");
+                    if (count == 0) continue;            // 셀렉터가 DOM에 없으면 다음으로
+
+                    if (visible)  
                     {
-                        await btn.ClickAsync();
+                        await btn.ClickAsync();           // 보이는 버튼이 있으면 클릭
+                        Debug.WriteLine($"[로그인 클릭] clicked: {sel}");
                         return;
                     }
+                    // visible은 아니지만 DOM에 존재하면 JS 클릭 시도
+                    // (특히 첫 번째 selector "button.login"에 유용)   
+                    // 주택관리사 협회 때문에 추가했음. 2026.05.17
+                    bool hidden = await btn.IsHiddenAsync();
+                    if (!hidden || sel == "button.login")  // 또는 항상 fallback
+                    {
+                        try
+                        {
+                            await btn.EvaluateAsync("el => el.click()");
+                            Debug.WriteLine($"[로그인 JS 클릭] JS-clicked (was invisible): {sel}");
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[고르인 JS 오류] JS click failed: {ex.Message}");
+                        }
+                    }
+
                 }
+                Debug.WriteLine("[Submit] 폴백 셀렉터 모두 실패 — Enter 시도");
             }
 
-            // 제출 버튼을 찾지 못하면 Enter
-            await pwdLocator.PressAsync("Enter");
+            // 제출 버튼을 찾지 못하면 Enter (자격증명이 있는 경우만)
+            if (pwdLocator is not null)
+                await pwdLocator.PressAsync("Enter");
         }
 
         /// <summary>이름으로 탭을 닫습니다.</summary>

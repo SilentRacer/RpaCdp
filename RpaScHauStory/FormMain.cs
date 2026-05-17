@@ -13,7 +13,6 @@ namespace RpaScHauStory
             InitializeComponent();
             Load += FormMain_Load;
             FormClosing += FormMain_FormClosing;
-            btnSettings.Click += btnSettings_Click;
         }
 
         // ── 초기화 ────────────────────────────────────────────────
@@ -24,10 +23,7 @@ namespace RpaScHauStory
             BuildTabButtons();
             SetTabButtonsEnabled(false);
 
-            if (_config.AutoConnect)
-                await ConnectBrowserAsync(runAutoRun: true);
-            else
-                lblStatus.Text = "수동 연결 모드 — '브라우저 연결' 버튼을 누르세요.";
+            await ConnectBrowserAsync(runAutoRun: true);
         }
 
         private async void FormMain_FormClosing(object? sender, FormClosingEventArgs e)
@@ -44,7 +40,7 @@ namespace RpaScHauStory
 
             const int btnWidth = 200;
             const int btnHeight = 46;
-            const int btnGap = 6;
+            const int btnGap = 20;
 
             int cols = Math.Max(1, _config.Columns);
 
@@ -92,7 +88,7 @@ namespace RpaScHauStory
                 }
 
                 var page = await _tabManager.NavigateAsync(tab.Name, tab.Url);
-                if (tab.AutoLogin && !string.IsNullOrEmpty(tab.LoginId))
+                if (tab.AutoLogin ) //&& !string.IsNullOrEmpty(tab.LoginId))
                 {
                     lblStatus.Text = $"[{tab.Name}] 자동 로그온 중...";
                     await _tabManager.AutoLoginAsync(page,
@@ -281,5 +277,9 @@ namespace RpaScHauStory
                 ctrl.Enabled = enabled;
         }
 
+        private void FormMain_Load_1(object sender, EventArgs e)
+        {
+
+        }
     }
 }
