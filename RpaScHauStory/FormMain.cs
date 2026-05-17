@@ -319,6 +319,7 @@ namespace RpaScHauStory
         {
             var allRows = new List<List<string>>();
             bool isFirstPage = true;
+            string prevPageKey = "";
 
             for (int pageNum = 0; pageNum < 1000; pageNum++)
             {
@@ -327,6 +328,11 @@ namespace RpaScHauStory
 
                 var rows = await ExtractTableDataAsync(page, tabConfig?.TableSelector);
                 if (rows.Count == 0) break;
+
+                // 직전 페이지와 데이터가 동일하면 마지막 페이지 도달 → 중단
+                var pageKey = string.Concat(rows.Take(3).SelectMany(r => r));
+                if (pageKey == prevPageKey) break;
+                prevPageKey = pageKey;
 
                 if (isFirstPage)
                 {
@@ -372,28 +378,85 @@ namespace RpaScHauStory
 
         private static async Task<bool> TryGoToNextPageAsync(IPage page, string? pagingSelector)
         {
+            // 페이징 HTML 구조를 디버그로 기록
+            var html = await page.EvaluateAsync<string>("""
+                selector => {
+                    if (selector) {
+                        const el = document.querySelector(selector);
+                        return el ? el.outerHTML : '(selector not found: ' + selector + ')';
+                    }
+                    const found = document.querySelector(
+                        '[id*="paging"i],[id*="Paging"],[id*="page_"i],[id*="PageNavi"i],' +
+                        '[class*="paging"i],[class*="pagination"i],[class*="pageNavi"i]');
+                    return found ? found.outerHTML : '(paging container not found)';
+                }
+                """, pagingSelector ?? "");
+            Debug.WriteLine($"[Paging HTML] {html?[..Math.Min(500, html.Length)]}");
+
             return await page.EvaluateAsync<bool>("""
                 selector => {
-                    const paging = selector
-                        ? document.querySelector(selector)
-                        : [...document.querySelectorAll('[id],[class]')]
-                            .find(el => /paging/i.test(el.id) || /paging|pagination/i.test(el.className));
+                    // ① 페이징 컨테이너 탐지
+                    let paging = selector ? document.querySelector(selector) : null;
+
+                    if (!paging) {
+                        // id/class 키워드 매칭
+                        paging = document.querySelector(
+                            '[id*="paging"i],[id*="Paging"],[id*="PageNavi"i],[id*="pageNum"i],' +
+                            '[class*="paging"i],[class*="pagination"i],[class*="pageNavi"i]');
+                    }
+
+                    if (!paging) {
+                        // 숫자 링크 3개 이상 있는 최소 컨테이너 탐지
+                        const candidates = [...document.querySelectorAll('div,td,tr,ul,nav,p,span,table')];
+                        let best = null, bestCount = 0;
+                        for (const el of candidates) {
+                            const nums = [...el.querySelectorAll('a')]
+                                .map(a => parseInt(a.textContent.trim()))
+                                .filter(n => Number.isInteger(n) && n >= 1 && n < 10000);
+                            // 중복 제거 후 고유 숫자 수
+                            const uniq = new Set(nums).size;
+                            if (uniq >= 3 && uniq > bestCount) {
+                                bestCount = uniq;
+                                best = el;
+                            }
+                        }
+                        paging = best;
+                    }
+
                     if (!paging) return false;
 
-                    // 현재 페이지 번호 (강조된 항목)
-                    const activeEl = paging.querySelector('strong, b, .on, .active, .current, [class*="on"], [class*="selected"]');
-                    const currentPage = activeEl ? parseInt(activeEl.textContent.trim()) : NaN;
+                    // ② 현재 페이지 번호 탐지
+                    let currentPage = NaN;
 
+                    // strong / b / em 또는 .on .active .current .selected 계열
+                    const activeEl = paging.querySelector(
+                        'strong, b, em, .on, .active, .current, .selected,' +
+                        '[class*="on"],[class*="cur"],[class*="active"],[class*="select"]');
+                    if (activeEl) {
+                        const n = parseInt(activeEl.textContent.trim());
+                        if (!isNaN(n)) currentPage = n;
+                    }
+
+                    // 링크가 없는 숫자 span/td/li
+                    if (isNaN(currentPage)) {
+                        const nonLinks = [...paging.querySelectorAll('span,td,li,div')]
+                            .filter(el => !el.querySelector('a') && el.tagName !== 'A');
+                        for (const el of nonLinks) {
+                            const n = parseInt(el.textContent.trim());
+                            if (!isNaN(n) && n >= 1) { currentPage = n; break; }
+                        }
+                    }
+
+                    // ③ 다음 번호 링크 클릭
+                    const allLinks = [...paging.querySelectorAll('a')];
                     if (!isNaN(currentPage)) {
-                        const links = [...paging.querySelectorAll('a')];
-                        const nextLink = links.find(a => parseInt(a.textContent.trim()) === currentPage + 1);
+                        const nextLink = allLinks.find(a => parseInt(a.textContent.trim()) === currentPage + 1);
                         if (nextLink) { nextLink.click(); return true; }
                     }
 
-                    // "다음" 텍스트 버튼 찾기
-                    const allAnchors = [...paging.querySelectorAll('a')];
-                    const nextByText = allAnchors.find(a => /^(다음|next|>|▶)$/i.test(a.textContent.trim()));
-                    if (nextByText) { nextByText.click(); return true; }
+                    // ④ "다음" / ">" / "▶" 텍스트 링크
+                    const nextBtn = allLinks.find(a => /^(다음|next|>|▶|»|>)$/i.test(a.textContent.trim()));
+                    if (nextBtn) { nextBtn.click(); return true; }
 
                     return false;
                 }

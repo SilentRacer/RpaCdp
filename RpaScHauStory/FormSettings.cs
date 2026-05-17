@@ -196,7 +196,8 @@ namespace RpaScHauStory
 
         private void btnDelete_Click(object? sender, EventArgs e)
         {
-            if (dgvTabs.SelectedRows.Count == 0) return;
+            int idx = dgvTabs.CurrentCell?.RowIndex ?? -1;
+            if (idx < 0) return;
 
             var result = MessageBox.Show(
                 "선택한 항목을 삭제하시겠습니까?",
@@ -205,27 +206,25 @@ namespace RpaScHauStory
                 MessageBoxIcon.Question);
 
             if (result == DialogResult.Yes)
-                dgvTabs.Rows.RemoveAt(dgvTabs.SelectedRows[0].Index);
+                dgvTabs.Rows.RemoveAt(idx);
         }
 
         private void btnMoveUp_Click(object? sender, EventArgs e)
         {
-            if (dgvTabs.SelectedRows.Count == 0) return;
-            int idx = dgvTabs.SelectedRows[0].Index;
-            if (idx == 0) return;
+            int idx = dgvTabs.CurrentCell?.RowIndex ?? -1;
+            if (idx <= 0) return;
+            int col = dgvTabs.CurrentCell!.ColumnIndex;
             SwapRows(idx, idx - 1);
-            dgvTabs.ClearSelection();
-            dgvTabs.Rows[idx - 1].Selected = true;
+            dgvTabs.CurrentCell = dgvTabs.Rows[idx - 1].Cells[col];
         }
 
         private void btnMoveDown_Click(object? sender, EventArgs e)
         {
-            if (dgvTabs.SelectedRows.Count == 0) return;
-            int idx = dgvTabs.SelectedRows[0].Index;
-            if (idx == dgvTabs.Rows.Count - 1) return;
+            int idx = dgvTabs.CurrentCell?.RowIndex ?? -1;
+            if (idx < 0 || idx >= dgvTabs.Rows.Count - 1) return;
+            int col = dgvTabs.CurrentCell!.ColumnIndex;
             SwapRows(idx, idx + 1);
-            dgvTabs.ClearSelection();
-            dgvTabs.Rows[idx + 1].Selected = true;
+            dgvTabs.CurrentCell = dgvTabs.Rows[idx + 1].Cells[col];
         }
 
         private void SwapRows(int a, int b)

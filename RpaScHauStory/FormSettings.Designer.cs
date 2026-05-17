@@ -119,7 +119,7 @@ namespace RpaScHauStory
             dgvTabs.Name = "dgvTabs";
             dgvTabs.RowHeadersVisible = false;
             dgvTabs.RowHeadersWidth = 82;
-            dgvTabs.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvTabs.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dgvTabs.Size = new Size(1955, 468);
             dgvTabs.TabIndex = 0;
             dgvTabs.CellContentClick += dgvTabs_CellContentClick;

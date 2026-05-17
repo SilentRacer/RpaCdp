@@ -108,8 +108,12 @@ namespace RpaScHauStory
                     if (!string.IsNullOrEmpty(pageTitle) &&
                         windowTitle.Contains(pageTitle, StringComparison.OrdinalIgnoreCase))
                     {
-                        ActivePage = page;
-                        Debug.WriteLine($"[TabHook] ActivePage → {page.Url}");
+                        if (ActivePage != page)
+                        {
+                            var prev = ActivePage?.Url ?? "(없음)";
+                            ActivePage = page;
+                            Debug.WriteLine($"[ActivePage 변경] {prev}  \n→  {page.Url}  (제목: {pageTitle})");
+                        }
                         return;
                     }
                 }
