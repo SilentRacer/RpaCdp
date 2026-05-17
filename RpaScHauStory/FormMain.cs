@@ -318,8 +318,7 @@ namespace RpaScHauStory
         private async Task<List<List<string>>> ExtractAllPagesAsync(IPage page, TabConfig? tabConfig)
         {
             var allRows = new List<List<string>>();
-            bool isFirstPage = true;
-            string prevPageKey = "";
+            var visitedKeys = new HashSet<string>(); // 방문한 모든 페이지 추적 (순환 감지)
 
             for (int pageNum = 0; pageNum < 1000; pageNum++)
             {
@@ -329,34 +328,66 @@ namespace RpaScHauStory
                 var rows = await ExtractTableDataAsync(page, tabConfig?.TableSelector);
                 if (rows.Count == 0) break;
 
-                // 직전 페이지와 데이터가 동일하면 마지막 페이지 도달 → 중단
+                // 이미 방문한 페이지(순환 포함) → 중단
                 var pageKey = string.Concat(rows.Take(3).SelectMany(r => r));
-                if (pageKey == prevPageKey) break;
-                prevPageKey = pageKey;
+                if (!visitedKeys.Add(pageKey)) break;
 
-                if (isFirstPage)
-                {
+                if (pageNum == 0)
                     allRows.AddRange(rows);
-                    isFirstPage = false;
-                }
                 else
-                {
-                    // 헤더 행은 첫 페이지에서만 포함
                     allRows.AddRange(rows.Count > 1 ? rows.Skip(1) : rows);
-                }
 
-                bool moved = await TryGoToNextPageAsync(page, tabConfig?.PagingSelector);
-                if (!moved) break;
-
-                try
+                var (moved, diagnosis) = await TryGoToNextPageAsync(page, tabConfig?.PagingSelector);
+                Debug.WriteLine($"[Paging] {diagnosis}");
+                if (!moved)
                 {
-                    await page.WaitForLoadStateAsync(LoadState.NetworkIdle,
-                        new PageWaitForLoadStateOptions { Timeout = 10000 });
+                    // "다음링크 없음"은 마지막 페이지 정상 종료 → 친화적 메시지
+                    lblStatus.Text += diagnosis.Contains("다음링크 없음")
+                        ? $" → 마지막 페이지 수집 완료"
+                        : $" | {diagnosis}";
+                    break;
                 }
-                catch { await Task.Delay(1000); }
+
+                // 포스트백 후 새 페이지 데이터가 실제로 나타날 때까지 대기
+                await WaitForNewPageAsync(page, tabConfig?.TableSelector, visitedKeys);
             }
 
             return allRows;
+        }
+
+        /// <summary>
+        /// 방문한 적 없는 새 페이지 데이터가 안정적으로 나타날 때까지 최대 10초 대기합니다.
+        /// 과도기 상태에서 잘못 탈출하지 않도록 동일한 새 키가 2회 연속 확인될 때 종료합니다.
+        /// </summary>
+        private static async Task WaitForNewPageAsync(
+            IPage page, string? tableSelector, HashSet<string> visitedKeys)
+        {
+            try
+            {
+                await page.WaitForLoadStateAsync(LoadState.NetworkIdle,
+                    new PageWaitForLoadStateOptions { Timeout = 10000 });
+            }
+            catch { }
+
+            await Task.Delay(300); // 초기 렌더링 여유
+
+            var deadline = DateTime.UtcNow.AddSeconds(8);
+            string stableKey = "";
+            while (DateTime.UtcNow < deadline)
+            {
+                var rows = await ExtractTableDataAsync(page, tableSelector);
+                var key = string.Concat(rows.Take(3).SelectMany(r => r));
+                if (rows.Count > 1 && !visitedKeys.Contains(key))
+                {
+                    if (key == stableKey) break; // 같은 새 데이터 2회 연속 → 안정화 완료
+                    stableKey = key;
+                }
+                else
+                {
+                    stableKey = ""; // 과도기 데이터 → 리셋
+                }
+                await Task.Delay(300);
+            }
         }
 
         private static async Task<List<List<string>>> ExtractTableDataAsync(IPage page, string? tableSelector)
@@ -376,91 +407,114 @@ namespace RpaScHauStory
             return result?.Select(r => r.ToList()).ToList() ?? [];
         }
 
-        private static async Task<bool> TryGoToNextPageAsync(IPage page, string? pagingSelector)
+        private static async Task<(bool Moved, string Diagnosis)> TryGoToNextPageAsync(
+            IPage page, string? pagingSelector)
         {
-            // 페이징 HTML 구조를 디버그로 기록
-            var html = await page.EvaluateAsync<string>("""
+            var result = await page.EvaluateAsync<string>("""
                 selector => {
-                    if (selector) {
-                        const el = document.querySelector(selector);
-                        return el ? el.outerHTML : '(selector not found: ' + selector + ')';
-                    }
-                    const found = document.querySelector(
-                        '[id*="paging"i],[id*="Paging"],[id*="page_"i],[id*="PageNavi"i],' +
-                        '[class*="paging"i],[class*="pagination"i],[class*="pageNavi"i]');
-                    return found ? found.outerHTML : '(paging container not found)';
-                }
-                """, pagingSelector ?? "");
-            Debug.WriteLine($"[Paging HTML] {html?[..Math.Min(500, html.Length)]}");
+                    // ── 페이징 컨테이너 탐지 ──────────────────────────────
 
-            return await page.EvaluateAsync<bool>("""
-                selector => {
-                    // ① 페이징 컨테이너 탐지
                     let paging = selector ? document.querySelector(selector) : null;
+                    let method = selector ? 'selector' : '';
 
+                    // 방법 1: id/class 키워드
                     if (!paging) {
-                        // id/class 키워드 매칭
                         paging = document.querySelector(
-                            '[id*="paging"i],[id*="Paging"],[id*="PageNavi"i],[id*="pageNum"i],' +
-                            '[class*="paging"i],[class*="pagination"i],[class*="pageNavi"i]');
+                            '[id*="paging"i],[id*="Paging"],[id*="PageNavi"i],[id*="pageNum"i],[id*="paginate"i],' +
+                            '[class*="paging"i],[class*="pagination"i],[class*="pageNavi"i],[class*="paginate"i]');
+                        if (paging) method = 'keyword:' + (paging.id || paging.className).slice(0, 60);
                     }
 
+                    // 방법 2: 가장 큰 테이블의 마지막 행 (ASP.NET GridView 패턴)
                     if (!paging) {
-                        // 숫자 링크 3개 이상 있는 최소 컨테이너 탐지
-                        const candidates = [...document.querySelectorAll('div,td,tr,ul,nav,p,span,table')];
-                        let best = null, bestCount = 0;
-                        for (const el of candidates) {
-                            const nums = [...el.querySelectorAll('a')]
-                                .map(a => parseInt(a.textContent.trim()))
-                                .filter(n => Number.isInteger(n) && n >= 1 && n < 10000);
-                            // 중복 제거 후 고유 숫자 수
-                            const uniq = new Set(nums).size;
-                            if (uniq >= 3 && uniq > bestCount) {
-                                bestCount = uniq;
-                                best = el;
-                            }
+                        const tables = [...document.querySelectorAll('table')]
+                            .sort((a, b) => b.rows.length - a.rows.length);
+                        for (const tbl of tables.slice(0, 5)) {
+                            const last = tbl.rows[tbl.rows.length - 1];
+                            if (!last) continue;
+                            const numEls = [...last.querySelectorAll('a,span,b,strong,td')]
+                                .filter(el => /^\d+$/.test(el.textContent.trim()));
+                            if (numEls.length >= 2) { paging = last; method = 'gridview-last-row'; break; }
                         }
-                        paging = best;
                     }
 
-                    if (!paging) return false;
+                    // 방법 3: 숫자 링크 2개 이상인 최소 컨테이너
+                    if (!paging) {
+                        let best = null, bestCount = 0;
+                        for (const el of document.querySelectorAll('div,td,tr,ul,nav,p,span,table,tbody')) {
+                            const links = [...el.querySelectorAll('a')]
+                                .filter(a => /^\d+$/.test(a.textContent.trim()));
+                            const uniq = new Set(links.map(a => parseInt(a.textContent))).size;
+                            if (uniq >= 2 && uniq > bestCount) { bestCount = uniq; best = el; }
+                        }
+                        if (best) { paging = best; method = 'numlink:' + bestCount; }
+                    }
 
-                    // ② 현재 페이지 번호 탐지
+                    if (!paging) return 'fail:컨테이너 없음';
+
+                    // ── 현재 페이지 번호 탐지 ────────────────────────────
+
                     let currentPage = NaN;
 
-                    // strong / b / em 또는 .on .active .current .selected 계열
                     const activeEl = paging.querySelector(
-                        'strong, b, em, .on, .active, .current, .selected,' +
+                        'strong,b,em,.on,.active,.current,.selected,' +
                         '[class*="on"],[class*="cur"],[class*="active"],[class*="select"]');
                     if (activeEl) {
                         const n = parseInt(activeEl.textContent.trim());
                         if (!isNaN(n)) currentPage = n;
                     }
 
-                    // 링크가 없는 숫자 span/td/li
                     if (isNaN(currentPage)) {
-                        const nonLinks = [...paging.querySelectorAll('span,td,li,div')]
-                            .filter(el => !el.querySelector('a') && el.tagName !== 'A');
-                        for (const el of nonLinks) {
+                        // 링크가 아닌 숫자 요소
+                        for (const el of paging.querySelectorAll('*')) {
+                            if (el.tagName === 'A' || el.querySelector('a')) continue;
                             const n = parseInt(el.textContent.trim());
-                            if (!isNaN(n) && n >= 1) { currentPage = n; break; }
+                            if (!isNaN(n) && n >= 1 && n < 10000) { currentPage = n; break; }
                         }
                     }
 
-                    // ③ 다음 번호 링크 클릭
+                    // ── 다음 페이지 클릭 ────────────────────────────────
+
                     const allLinks = [...paging.querySelectorAll('a')];
+
                     if (!isNaN(currentPage)) {
                         const nextLink = allLinks.find(a => parseInt(a.textContent.trim()) === currentPage + 1);
-                        if (nextLink) { nextLink.click(); return true; }
+                        if (nextLink) { nextLink.click(); return 'ok:' + (currentPage + 1) + '(' + method + ')'; }
                     }
 
-                    // ④ "다음" / ">" / "▶" 텍스트 링크
-                    const nextBtn = allLinks.find(a => /^(다음|next|>|▶|»|>)$/i.test(a.textContent.trim()));
-                    if (nextBtn) { nextBtn.click(); return true; }
+                    // "다음" 버튼: 텍스트·title·img alt·img src 모두 검사, 느슨한 매칭
+                    const isNext = a => {
+                        const text  = a.textContent.trim();
+                        const title = (a.title || a.getAttribute('aria-label') || '').trim();
+                        const img   = a.querySelector('img');
+                        const alt   = (img?.alt || '').trim();
+                        const src   = (img?.src || img?.getAttribute('src') || '').toLowerCase();
+                        const combined = text + title + alt;
+                        // 숫자 링크는 제외
+                        if (/^\d+$/.test(text)) return false;
+                        return /다음|next/i.test(combined) || /next/i.test(src) || /^[>▶»›]$/.test(text);
+                    };
+                    const nextBtn = allLinks.find(isNext);
+                    if (nextBtn) {
+                        const img = nextBtn.querySelector('img');
+                        const label = nextBtn.textContent.trim()
+                            || nextBtn.title
+                            || (img?.alt || '')
+                            || (img?.src || '').split('/').pop()?.split('?')[0]
+                            || '?';
+                        nextBtn.click();
+                        return 'ok:next[' + label + '](' + method + ')';
+                    }
 
-                    return false;
+                    // 디버그: 페이징 컨테이너 안 링크 목록 출력용
+                    const linkTexts = allLinks.map(a => '"' + a.textContent.trim() + '"').join(',');
+                    return 'fail:다음링크 없음(현재=' + currentPage + ',링크=[' + linkTexts + '],방법=' + method + ')';
                 }
                 """, pagingSelector ?? "");
+
+            if (result?.StartsWith("ok:") == true)
+                return (true, result);
+            return (false, result ?? "fail:null");
         }
 
         private static void SaveToExcel(List<List<string>> rows, string filePath)
