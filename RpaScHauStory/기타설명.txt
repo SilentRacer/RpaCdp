@@ -1,0 +1,18 @@
+﻿
+남광하우스토리의 홈네트워크 데이터 저장~~~
+<div id="ctl00_ContentPlaceHolder1_UpdatePanel2">
+        <table style="width: 660px">
+            <tbody><tr>
+                <td style="width:560px;" align="center">
+                    <div id="ctl00_ContentPlaceHolder1_divPaging"><table border="0" cellpadding="0" cellspacing="0" align="center">    <tbody><tr>        <td width="20"><a href="javascript:GoToPage(1,12);"><img src="/adm/images/Paging/prev_2.gif" align="absmiddle" border="0"></a>        </td>        <td><a href="javascript:GoToPage(1,12);"><img src="/adm/images/Paging/prev_1.gif" align="absmiddle" border="0"></a>        </td><td>    <table border="0" cellpadding="0" cellspacing="0" style="text-align:center" height="12" id="PagingTable">        <tbody><tr><td class="pageListOut_1" onmouseover="this.className='pageListOut_1'" onmouseout="this.className='pageListOut_1'" onclick="location.href='javascript:GoToPage(11,12);'"><a href="javascript:GoToPage(11,12);">11</a></td>        </tr>    </tbody></table></td><td>    <table border="0" cellpadding="0" cellspacing="0" style="text-align:center" height="12" id="PagingTable">        <tbody><tr><td class="pageListOut"><b style="font-size:12px">12</b></td>        </tr>    </tbody></table></td>        <td><img src="/adm/images/Paging/next_1_dim.gif" align="absmiddle" border="0">         </td>        <td width="20" align="right"><img src="/adm/images/Paging/next_2_dim.gif" align="absmiddle" border="0">         </td>    </tr></tbody></table></div>
+                </td>
+                <td>
+                    <div id="ctl00_ContentPlaceHolder1_divPageInfo">12 / 12 Pages </div>
+                </td>
+            </tr>
+        </tbody></table>
+        </div>
+==> 위와 같은 구조에서 페이지 셀렉터를 
+    잘못판단   ::: ctl00_ContentPlaceHolder1_UpdatePanel2
+    정상적인것 ::: ctl00_ContentPlaceHolder1_divPaging
+    ===> 즉 가능한 범위가 작은것을 지정해야 함.

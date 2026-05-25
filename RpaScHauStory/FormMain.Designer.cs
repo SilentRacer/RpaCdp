@@ -48,7 +48,7 @@ namespace RpaScHauStory
             pnlTop.Dock = DockStyle.Top;
             pnlTop.Location = new Point(0, 0);
             pnlTop.Name = "pnlTop";
-            pnlTop.Size = new Size(1038, 76);
+            pnlTop.Size = new Size(1184, 76);
             pnlTop.TabIndex = 2;
             // 
             // btnConnect
@@ -81,7 +81,7 @@ namespace RpaScHauStory
             pnlMiddle.Location = new Point(0, 76);
             pnlMiddle.Name = "pnlMiddle";
             pnlMiddle.Padding = new Padding(10);
-            pnlMiddle.Size = new Size(1038, 269);
+            pnlMiddle.Size = new Size(1184, 292);
             pnlMiddle.TabIndex = 0;
             // 
             // pnlTabs
@@ -96,9 +96,9 @@ namespace RpaScHauStory
             pnlBottom.Controls.Add(btnSaveExcel);
             pnlBottom.Controls.Add(lblStatus);
             pnlBottom.Dock = DockStyle.Bottom;
-            pnlBottom.Location = new Point(0, 345);
+            pnlBottom.Location = new Point(0, 368);
             pnlBottom.Name = "pnlBottom";
-            pnlBottom.Size = new Size(1038, 146);
+            pnlBottom.Size = new Size(1184, 146);
             pnlBottom.TabIndex = 1;
             // 
             // btnSaveExcel
@@ -125,7 +125,7 @@ namespace RpaScHauStory
             // 
             AutoScaleDimensions = new SizeF(14F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1038, 491);
+            ClientSize = new Size(1184, 514);
             Controls.Add(pnlMiddle);
             Controls.Add(pnlBottom);
             Controls.Add(pnlTop);

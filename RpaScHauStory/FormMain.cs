@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Net.Http;
 
 namespace RpaScHauStory
 {
@@ -102,12 +101,12 @@ namespace RpaScHauStory
             {
                 lblStatus.Text = "브라우저 확인 중...";
 
-                if (!await IsCdpPortOpenAsync())
+                if (!await ChromeLauncher.IsCdpPortOpenAsync(_config.CdpEndpoint))
                 {
                     lblStatus.Text = "Chrome 실행 중...";
-                    LaunchChromeWithDebugging();
+                    ChromeLauncher.Launch();
 
-                    if (!await WaitForCdpPortAsync(timeoutMs: 5000))
+                    if (!await ChromeLauncher.WaitForPortAsync(_config.CdpEndpoint, timeoutMs: 5000))
                         throw new TimeoutException("Chrome이 5초 내에 응답하지 않았습니다.");
                 }
 
@@ -158,58 +157,6 @@ namespace RpaScHauStory
                 }
             }
             lblStatus.Text = "연결됨";
-        }
-
-        // ── Chrome 실행 헬퍼 ──────────────────────────────────────
-
-        private static void LaunchChromeWithDebugging()
-        {
-            string[] chromePaths =
-            [
-                @"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    @"Google\Chrome\Application\chrome.exe"),
-            ];
-
-            var chromePath = chromePaths.FirstOrDefault(File.Exists)
-                ?? throw new FileNotFoundException("Chrome 실행 파일을 찾을 수 없습니다.");
-
-            var userDataDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                "KTJ", "CDP", "ChromeCdpProfile");
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = chromePath,
-                Arguments = $"--remote-debugging-port=9222 --user-data-dir=\"{userDataDir}\"",
-                UseShellExecute = false,
-            });
-        }
-
-        private static async Task<bool> IsCdpPortOpenAsync()
-        {
-            try
-            {
-                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
-                var resp = await http.GetAsync($"http://127.0.0.1:9222/json/version");
-                return resp.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static async Task<bool> WaitForCdpPortAsync(int timeoutMs)
-        {
-            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-            while (DateTime.UtcNow < deadline)
-            {
-                if (await IsCdpPortOpenAsync()) return true;
-                await Task.Delay(300);
-            }
-            return false;
         }
 
         // ── 버튼 핸들러 ───────────────────────────────────────────
